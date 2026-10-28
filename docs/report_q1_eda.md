@@ -128,10 +128,11 @@ headline metric. Concretely: always predicting the majority class (`Precipitate`
 accuracy while achieving 0% Crystals recall — every crystal hit would be missed despite a
 seemingly reasonable accuracy figure.
 
-**Primary metric:** recall on `Crystals` at a fixed minimum precision (`P_MIN`), with PR-AUC for
-Crystals as a supporting metric. `P_MIN` itself is still to be set — doing so needs an actual
-validation PR curve from a trained model, which does not exist yet at the EDA stage; it will be
-fixed once the classical baseline produces a first PR curve, using validation data only.
+**Primary metric:** recall on `Crystals` at a fixed minimum precision, **`P_MIN = 0.30`**, with
+PR-AUC for Crystals as a supporting metric. Set from the classical baseline's validation PR
+curve (base rate ~12.4%; `P_MIN = 0.30` gives ~85% recall while precision stays ~2.4x the base
+rate — see `docs/primary_metric.md` for the full reasoning). This value is fixed for every model
+family (classical baseline, every ANN variant, GenAI evaluation).
 
 ## Three findings that constrain modelling
 

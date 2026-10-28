@@ -19,8 +19,9 @@ Changing the problem or dataset requires lecturer approval – do not suggest it
   costs a few minutes of inspection. The loss, metric and threshold must reflect this asymmetry.
 
 ## Metrics
-- **Primary:** recall on `Crystals` at a fixed minimum precision (`P_MIN = TBD`, set from EDA,
-  using validation data only). The same primary metric is used for every model, including GenAI.
+- **Primary:** recall on `Crystals` at a fixed minimum precision (`P_MIN = 0.30`, set 2026-10-28
+  from the classical baseline's validation PR curve - see `docs/primary_metric.md`). The same
+  primary metric is used for every model, including GenAI.
 - **Supporting:** PR-AUC for `Crystals`, per-class confusion matrix, training time, inference latency.
 - Do not use overall accuracy as the headline metric.
 

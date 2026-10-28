@@ -1,7 +1,0 @@
-tfrecord
-pandas
-pillow
-scikit-learn
-matplotlib
-ipykernel
-jupyter

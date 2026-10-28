@@ -1,4 +1,6 @@
 data/raw/
+data/features_baseline/
+experiments/models/
 
 __pycache__/
 *.pyc
