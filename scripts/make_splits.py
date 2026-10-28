@@ -6,6 +6,13 @@ proportions stay close to balanced across splits.
 
 Run once. Refuses to overwrite an existing data/splits.csv unless --force is passed, since the
 split must never be regenerated once modelling starts.
+
+v2 history: the first version of this script only matched two filename patterns, so ~2,857
+images with no plate/well info in the filename fell back to a near-duplicate image hash. EDA
+(notebooks/01_eda.ipynb) found a real leak from that fallback - two near-identical images of the
+same well landed in test and val - and also found a third filename pattern (PATTERN_X below)
+that covers most of that fallback bucket with precise plate+well info. The split was regenerated
+once, before any model touched it, to fix this; see docs/ for the dated note on why.
 """
 
 import argparse
@@ -21,6 +28,10 @@ SEED = 42
 
 PATTERN_PLATE_WELL = re.compile(r"plateID(\d+).*wellNum(\d+)")
 PATTERN_HASH_WELL = re.compile(r"^([0-9a-z]+)_([A-H]\d{1,2})_")
+# X + 9-digit plate + 4-digit well + 12-digit timestamp (YYYYMMDDhhmm) + .png - confirmed by
+# checking the well digits fall in 1-1536 (a real microplate density) and the timestamp digits
+# decode to valid 2004-2005 dates, matching MARCO's known imaging period (see notebooks/01_eda.ipynb).
+PATTERN_X = re.compile(r"^X(\d{9})(\d{4})\d{12}\.png$")
 
 
 def filename_group_key(filename: str) -> str | None:
@@ -31,6 +42,9 @@ def filename_group_key(filename: str) -> str | None:
     match = PATTERN_HASH_WELL.search(filename)
     if match:
         return f"{match.group(1)}_{match.group(2)}"
+    match = PATTERN_X.search(filename)
+    if match:
+        return f"X{match.group(1)}_w{match.group(2)}"
     return None
 
 
