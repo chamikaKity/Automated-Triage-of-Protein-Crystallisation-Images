@@ -20,5 +20,15 @@ CLAUDE.md rule 1 ("never re-split"). This is a documented leakage-methodology fi
 EDA stage, not a re-split chosen for better metrics; no model selection, threshold, or evaluation
 has touched the split yet. The split will not be regenerated again after this.
 
-Old split (v1) is kept for comparison; see git history for `scripts/make_splits.py` and
-`data/splits.csv` for the exact before/after diff.
+**Scope of the change:** regenerating moved more than just the directly-affected images - 6,328
+of 14,367 images (44%) ended up in a different split than before, even though only 2,359 images
+(16%) actually had their `group_key` change. `StratifiedGroupKFold`'s internal shuffling turned
+out sensitive to the exact set of group labels, not just the group structure, so renaming
+~2,000 already-singleton groups (from `single_<id>` to a precise `X<plate>_w<well>` key)
+reshuffled many unrelated images too. Aggregate stats stayed stable (same split sizes, ~12.3%
+Crystals in every split, both before and after), but this is exactly why the split must stay
+fixed from here on - this single regeneration is the only one that will happen, and it happened
+before any model touched the data. See `notebooks/01_eda.ipynb`'s "v1 vs v2 split comparison"
+section for the full before/after quantification, and `data/splits_v1.csv` (kept only for this
+comparison, not read anywhere else) plus git history for `scripts/make_splits.py` for the exact
+diff.
