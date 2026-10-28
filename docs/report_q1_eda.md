@@ -108,6 +108,16 @@ and 47 of those 58 (81%) span more than one drop number — meaning most label d
 way, the split still keeps the whole group together regardless of label; each group's majority
 label is used only to decide which split it goes to, not as a claim the group has one true label.
 
+**Limitation: relationships beyond the well.** All grouping above protects against the same
+physical drop (same plate+well) appearing in more than one split. It does not, and cannot,
+protect against the same protein or the same screening conditions being run on a *different*
+plate — common practice in crystallisation screening (replicate plates, repeat attempts, broader
+condition screens). Two images from different plates could still share protein-specific visual
+characteristics without being the same physical drop. MARCO's metadata carries no protein ID,
+batch ID, or experiment ID linking plates together, and nothing in the filenames identifies this
+either, so this risk cannot be detected or controlled for with the metadata available. This is a
+residual limitation of the dataset itself, not a gap in the grouping method described above.
+
 ## FP/FN consequences and metric justification
 
 A false negative — a `Crystals` drop the model misses — can mean losing a hit produced from
