@@ -12,6 +12,8 @@ dependencies = [
     "scikit-image",
     "lightgbm",
     "graphviz",
+    "torch",
+    "torchvision",
     "ipykernel",
     "jupyter",
 ]
@@ -22,3 +24,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/marco"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "jupyterlab>=4.6.4",
+]
