@@ -112,7 +112,7 @@ def main() -> None:
                              batch_size=64, shuffle=False, num_workers=2)
 
     rng = np.random.default_rng(args.seed)
-    log_rows = []
+    args.model_out.parent.mkdir(parents=True, exist_ok=True)
     best = None
 
     for i in range(args.n_configs):
@@ -145,7 +145,7 @@ def main() -> None:
               f"crystals_pr_auc={final_metrics['crystals_pr_auc']:.3f} "
               f"accuracy={final_metrics['accuracy']:.3f}")
 
-        log_rows.append({
+        log_row = {
             "id": f"ann_initial_{i:03d}",
             "date": date.today().isoformat(),
             "model": f"ANN Initial ({params['backbone']}, frozen backbone)",
@@ -158,20 +158,18 @@ def main() -> None:
                 "inference_latency_ms_per_image": round(infer_latency_ms, 4),
             }),
             "notes": "",
-        })
+        }
+        pd.DataFrame([log_row]).to_csv(args.log_path, mode="a", header=False, index=False)
 
         if best is None or final_metrics["recall_at_p_min"] > best["metrics"]["recall_at_p_min"]:
             best = {"model": model, "params": params, "metrics": final_metrics, "history": history}
-
-    pd.DataFrame(log_rows).to_csv(args.log_path, mode="a", header=False, index=False)
-    print(f"\nlogged {len(log_rows)} configs to {args.log_path}")
-
-    args.model_out.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(best["model"].state_dict(), args.model_out)
-    args.history_out.write_text(json.dumps({"params": best["params"], "history": best["history"]}, indent=2))
+            torch.save(best["model"].state_dict(), args.model_out)
+            args.history_out.write_text(
+                json.dumps({"params": best["params"], "history": best["history"]}, indent=2)
+            )
 
     trainable, total = count_parameters(best["model"])
-    print(f"best config saved to {args.model_out}: {best['params']}")
+    print(f"\nbest config saved to {args.model_out}: {best['params']}")
     print(f"params: {trainable:,} trainable / {total:,} total")
     print(f"best metrics: {best['metrics']}")
 
