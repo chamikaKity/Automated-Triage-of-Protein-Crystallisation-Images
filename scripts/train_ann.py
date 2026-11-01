@@ -128,12 +128,17 @@ def main() -> None:
 
         history = {"train_loss": [], "val_loss": [], "val_crystals_pr_auc": []}
         t0 = time.time()
-        for _ in range(args.epochs):
+        for epoch in range(args.epochs):
+            epoch_t0 = time.time()
             train_loss = train_one_epoch(model, train_loader, criterion, optimizer)
             epoch_val = evaluate(model, val_loader, criterion)
             history["train_loss"].append(train_loss)
             history["val_loss"].append(epoch_val["loss"])
             history["val_crystals_pr_auc"].append(epoch_val["crystals_pr_auc"])
+            print(f"  config {i + 1}/{args.n_configs} epoch {epoch + 1}/{args.epochs}: "
+                  f"train_loss={train_loss:.3f} val_loss={epoch_val['loss']:.3f} "
+                  f"val_crystals_pr_auc={epoch_val['crystals_pr_auc']:.3f} "
+                  f"({time.time() - epoch_t0:.1f}s)")
         train_time_s = time.time() - t0
 
         t0 = time.time()
