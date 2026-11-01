@@ -109,7 +109,7 @@ def main() -> None:
     class_weights = compute_class_weights(train_df).to(DEVICE)
 
     val_loader = DataLoader(MarcoDataset(val_df, args.data_dir, train=False),
-                             batch_size=64, shuffle=False, num_workers=2)
+                             batch_size=64, shuffle=False, num_workers=0)
 
     rng = np.random.default_rng(args.seed)
     args.model_out.parent.mkdir(parents=True, exist_ok=True)
@@ -118,7 +118,7 @@ def main() -> None:
     for i in range(args.n_configs):
         params = sample_hyperparams(rng)
         train_loader = DataLoader(MarcoDataset(train_df, args.data_dir, train=True),
-                                   batch_size=params["batch_size"], shuffle=True, num_workers=2)
+                                   batch_size=params["batch_size"], shuffle=True, num_workers=0)
 
         model = build_model(params["backbone"]).to(DEVICE)
         criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
