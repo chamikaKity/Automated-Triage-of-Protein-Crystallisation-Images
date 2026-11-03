@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MARCO Crystallisation Triage</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 1.4rem; }
+  .upload-box { border: 2px dashed #999; border-radius: 8px; padding: 24px; text-align: center; margin: 20px 0; }
+  #result { margin-top: 24px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .bar-label { width: 110px; font-size: 0.9rem; }
+  .bar-track { flex: 1; background: #eee; border-radius: 4px; height: 18px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #0072B2; }
+  .bar-fill.crystals { background: #D55E00; }
+  .bar-pct { width: 50px; text-align: right; font-size: 0.85rem; }
+  .predicted { font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; }
+  .note { font-size: 0.85rem; color: #555; margin-top: 16px; line-height: 1.4; }
+  #error { color: #b00020; margin-top: 12px; }
+  #preview { max-width: 100%; max-height: 240px; margin-top: 12px; border-radius: 6px; display: none; }
+  button { padding: 8px 16px; font-size: 1rem; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>MARCO Crystallisation Image Triage</h1>
+  <p>Upload a crystallisation drop image to get a triage prediction from the trained model.</p>
+
+  <div class="upload-box">
+    <input type="file" id="fileInput" accept="image/*">
+    <br><br>
+    <button id="predictBtn">Get prediction</button>
+    <br>
+    <img id="preview" alt="preview">
+  </div>
+
+  <div id="error"></div>
+  <div id="result"></div>
+
+  <script>
+    const CLASS_ORDER = ["Clear", "Crystals", "Other", "Precipitate"];
+
+    document.getElementById("fileInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById("preview");
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = "block";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("error").innerHTML = "";
+    });
+
+    document.getElementById("predictBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("fileInput");
+      const errorDiv = document.getElementById("error");
+      const resultDiv = document.getElementById("result");
+      errorDiv.innerHTML = "";
+      resultDiv.innerHTML = "";
+
+      if (!fileInput.files[0]) {
+        errorDiv.innerHTML = "Please choose an image file first.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      resultDiv.innerHTML = "Running model...";
+      try {
+        const res = await fetch("/predict", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) {
+          errorDiv.innerHTML = data.detail || "Something went wrong.";
+          resultDiv.innerHTML = "";
+          return;
+        }
+        renderResult(data);
+      } catch (err) {
+        errorDiv.innerHTML = "Could not reach the server.";
+        resultDiv.innerHTML = "";
+      }
+    });
+
+    function renderResult(data) {
+      const resultDiv = document.getElementById("result");
+      let html = `<div class="predicted">Predicted: ${data.predicted_class}</div>`;
+      for (const cls of CLASS_ORDER) {
+        const pct = (data.class_scores[cls] * 100).toFixed(1);
+        const clsCss = cls === "Crystals" ? "crystals" : "";
+        html += `
+          <div class="bar-row">
+            <div class="bar-label">${cls}</div>
+            <div class="bar-track"><div class="bar-fill ${clsCss}" style="width:${pct}%"></div></div>
+            <div class="bar-pct">${pct}%</div>
+          </div>`;
+      }
+      html += `<div class="note"><strong>What this means:</strong> ${data.explanation}</div>`;
+      html += `<div class="note"><strong>Limitations:</strong> ${data.limitations}</div>`;
+      resultDiv.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

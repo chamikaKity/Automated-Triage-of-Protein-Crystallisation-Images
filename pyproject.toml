@@ -16,6 +16,9 @@ dependencies = [
     "torchvision",
     "ipykernel",
     "jupyter",
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
 ]
 
 [build-system]

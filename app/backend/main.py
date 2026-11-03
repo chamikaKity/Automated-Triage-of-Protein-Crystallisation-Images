@@ -1,0 +1,78 @@
+"""FastAPI backend for the MARCO web app - runs the trained model on each request.
+
+Serves the upload page and the /predict endpoint. The model is loaded once at startup (the
+weights never change between requests), but every prediction runs a fresh forward pass over
+the uploaded image - nothing is precomputed or hard-coded (CLAUDE.md rule 10). Uses the Final
+ANN (layer4+head unfrozen), the best model by the primary metric - see
+docs/ann_initial_training.md and experiments/log.csv.
+"""
+
+import io
+import json
+from pathlib import Path
+
+import torch
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
+from PIL import Image, UnidentifiedImageError
+
+from marco.data import CLASS_ORDER, build_transforms
+from marco.model import build_model
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+MODEL_PATH = PROJECT_ROOT / "experiments" / "models" / "ann_final.pt"
+HISTORY_PATH = PROJECT_ROOT / "experiments" / "models" / "ann_final_history.json"
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+EXPLANATION = (
+    "This score is the model's output probability for each class, not a calibrated or "
+    "guaranteed confidence - it reflects patterns learned from the training data, not proof "
+    "of correctness. Always inspect flagged drops visually before acting on a prediction, "
+    "especially for Crystals."
+)
+LIMITATIONS = (
+    "Trained on MARCO dataset images from a fixed set of imaging setups. Images from unseen "
+    "microscopes, lighting conditions, or plate types may reduce accuracy. The model has no "
+    "way to say 'I don't recognise this' - testing showed it can confidently misclassify "
+    "images that don't resemble a crystallisation drop at all (e.g. random noise scored 56% "
+    "Crystals). Only use this on actual drop images."
+)
+
+app = FastAPI(title="MARCO Crystallisation Triage")
+
+params = json.loads(HISTORY_PATH.read_text())["params"]
+model = build_model(params["backbone"])
+model.load_state_dict(torch.load(MODEL_PATH, map_location="cpu"))
+model.eval()
+transform = build_transforms(train=False)
+
+
+@app.get("/")
+def index():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    raw = await file.read()
+    try:
+        img = Image.open(io.BytesIO(raw)).convert("RGB")
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(
+            status_code=400,
+            detail="Could not read this file as an image. Please upload a JPEG or PNG.",
+        )
+
+    tensor = transform(img).unsqueeze(0)
+    with torch.no_grad():
+        probs = torch.softmax(model(tensor), dim=1)[0]
+
+    scores = {cls: round(float(p), 4) for cls, p in zip(CLASS_ORDER, probs)}
+    predicted = max(scores, key=scores.get)
+
+    return JSONResponse({
+        "predicted_class": predicted,
+        "class_scores": scores,
+        "explanation": EXPLANATION,
+        "limitations": LIMITATIONS,
+    })
