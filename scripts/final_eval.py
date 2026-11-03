@@ -139,7 +139,10 @@ def main() -> None:
         model_label = "LightGBM (HOG+LBP) - TEST"
     else:
         metrics, detail = eval_ann(args.data_dir, args.ann_model, args.ann_history, test_df)
-        model_label = "ANN Initial (frozen backbone) - TEST"
+        # Label from the checkpoint actually evaluated, not assumed - args.ann_model can point
+        # at either ann_initial.pt or ann_final.pt.
+        ann_kind = "Final (layer4+head unfrozen)" if "final" in args.ann_model.stem else "Initial (frozen backbone)"
+        model_label = f"ANN {ann_kind} - TEST"
 
     print(f"\n{model_label}")
     print(f"  recall@P_MIN={metrics['recall_at_p_min']:.3f}")
