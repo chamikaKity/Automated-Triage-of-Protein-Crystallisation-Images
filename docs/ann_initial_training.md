@@ -94,6 +94,11 @@ hardware (baseline: this laptop's CPU; ANN: GPU), so that gap isn't a clean comp
 ## Infrastructure note
 
 Frozen-backbone training still needs a GPU to run in reasonable time - a CPU run of this same
-search would take hours longer. It was run on a RunPod GPU pod (RTX 4090, ~65 minutes,
-~$0.37 total) after running into GPU quota limits on Colab. The code itself
-(`scripts/train_ann.py`) is unchanged by where it runs.
+search would take far longer. It was run on a RunPod GPU pod (RTX 4090) after running into GPU
+quota limits on Colab. All 12 configs ran sequentially on a single pod: summing each config's
+logged `train_time_s` in `experiments/log.csv` gives **~3.57 hours of GPU time (~$1.21 at
+$0.34/hr)**, plus some additional wall-clock time for setup and the one-off dataset download.
+The code itself (`scripts/train_ann.py`) is unchanged by where it runs. For the next search
+(the Final ANN), the plan is to split the config list across several pods running concurrently
+to cut wall-clock time without changing the total compute used - see `scripts/train_ann.py`'s
+`--start-idx`/`--end-idx` options once added.
