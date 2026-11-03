@@ -1,9 +1,8 @@
 """ResNet backbone + simple classifier head, for both the Initial and Final ANN.
 
 Two fine-tuning degrees: "frozen" (Initial ANN - only the head trains) and "layer4" (Final
-ANN - the backbone's last residual block also trains). The "layer4" degree is pending lecturer
-approval - see docs/ann_initial_training.md. Do not train or report results with it until
-that approval is recorded.
+ANN - the backbone's last residual block also trains), the optional 4th hyperparameter -
+approved by the lecturer, see docs/lecturer_approval_fine_tuning.md.
 """
 
 import torch.nn as nn

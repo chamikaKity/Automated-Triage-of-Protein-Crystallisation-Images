@@ -3,9 +3,8 @@
 Hyperparameter search over the three required dimensions (learning rate, batch size,
 network depth = resnet18 vs resnet34), at a fixed fine-tuning degree. --fine-tune-degree
 frozen (default) trains the Initial ANN (only the head trains); layer4 trains the Final ANN
-(the backbone's last block also trains) - this is the optional 4th hyperparameter, PENDING
-LECTURER APPROVAL. Do not run with --fine-tune-degree layer4 or report its results until that
-approval is recorded in docs/.
+(the backbone's last block also trains) - the optional 4th hyperparameter, approved by the
+lecturer, see docs/lecturer_approval_fine_tuning.md.
 
 Model selection uses recall at P_MIN=0.30 directly (not a proxy like PR-AUC), since P_MIN is
 already fixed - see docs/primary_metric.md.
