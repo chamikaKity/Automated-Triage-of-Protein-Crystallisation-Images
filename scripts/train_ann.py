@@ -1,8 +1,11 @@
-"""Train the Initial ANN (frozen ResNet18/34 backbone + head) and log every run.
+"""Train the Initial or Final ANN (ResNet18/34 + head) and log every run.
 
 Hyperparameter search over the three required dimensions (learning rate, batch size,
-network depth = resnet18 vs resnet34). Fine-tuning stays frozen throughout - the Final ANN
-(partial unfreeze) is a separate, later step pending lecturer approval, see docs/.
+network depth = resnet18 vs resnet34), at a fixed fine-tuning degree. --fine-tune-degree
+frozen (default) trains the Initial ANN (only the head trains); layer4 trains the Final ANN
+(the backbone's last block also trains) - this is the optional 4th hyperparameter, PENDING
+LECTURER APPROVAL. Do not run with --fine-tune-degree layer4 or report its results until that
+approval is recorded in docs/.
 
 Model selection uses recall at P_MIN=0.30 directly (not a proxy like PR-AUC), since P_MIN is
 already fixed - see docs/primary_metric.md.
@@ -28,7 +31,7 @@ from torch.utils.data import DataLoader
 
 from marco.data import CLASS_ORDER, MarcoDataset, compute_class_weights, load_split
 from marco.metrics import recall_at_precision
-from marco.model import build_model, count_parameters, freeze_backbone_bn
+from marco.model import FINE_TUNE_DEGREES, build_model, count_parameters, freeze_backbone_bn
 
 SEED = 42
 EPOCHS = 12
@@ -41,9 +44,9 @@ def set_seed(seed: int) -> None:
     np.random.seed(seed)
 
 
-def train_one_epoch(model, loader, criterion, optimizer) -> float:
+def train_one_epoch(model, loader, criterion, optimizer, fine_tune_degree: str) -> float:
     model.train()
-    freeze_backbone_bn(model)
+    freeze_backbone_bn(model, fine_tune_degree)
     total_loss = 0.0
     for imgs, labels in loader:
         imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
@@ -94,9 +97,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--splits-path", type=Path, default=Path("data/splits.csv"))
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--log-path", type=Path, default=Path("experiments/log.csv"))
-    parser.add_argument("--model-out", type=Path, default=Path("experiments/models/ann_initial.pt"))
-    parser.add_argument("--history-out", type=Path,
-                         default=Path("experiments/models/ann_initial_history.json"))
+    parser.add_argument("--fine-tune-degree", choices=FINE_TUNE_DEGREES, default="frozen",
+                         help="frozen = Initial ANN (only the head trains); layer4 = Final ANN "
+                              "(backbone's last block also trains) - pending lecturer approval.")
+    parser.add_argument("--model-out", type=Path, default=None,
+                         help="Defaults to experiments/models/ann_initial.pt or ann_final.pt, "
+                              "based on --fine-tune-degree.")
+    parser.add_argument("--history-out", type=Path, default=None,
+                         help="Defaults alongside --model-out.")
     parser.add_argument("--n-configs", type=int, default=N_CONFIGS)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--seed", type=int, default=SEED)
@@ -110,6 +118,12 @@ def parse_args() -> argparse.Namespace:
     if not 0 <= args.start_idx < args.end_idx <= args.n_configs:
         raise ValueError(f"need 0 <= start_idx < end_idx <= n_configs, got "
                           f"start_idx={args.start_idx}, end_idx={args.end_idx}, n_configs={args.n_configs}")
+
+    run_name = "ann_initial" if args.fine_tune_degree == "frozen" else "ann_final"
+    if args.model_out is None:
+        args.model_out = Path(f"experiments/models/{run_name}.pt")
+    if args.history_out is None:
+        args.history_out = Path(f"experiments/models/{run_name}_history.json")
     return args
 
 
@@ -125,6 +139,10 @@ def main() -> None:
     val_loader = DataLoader(MarcoDataset(val_df, args.data_dir, train=False),
                              batch_size=64, shuffle=False, num_workers=0)
 
+    run_name = "ann_initial" if args.fine_tune_degree == "frozen" else "ann_final"
+    model_label = "ANN Initial" if args.fine_tune_degree == "frozen" else "ANN Final"
+    fine_tune_desc = "frozen backbone" if args.fine_tune_degree == "frozen" else "layer4+head unfrozen"
+
     rng = np.random.default_rng(args.seed)
     all_params = [sample_hyperparams(rng) for _ in range(args.n_configs)]
     args.model_out.parent.mkdir(parents=True, exist_ok=True)
@@ -135,7 +153,7 @@ def main() -> None:
         train_loader = DataLoader(MarcoDataset(train_df, args.data_dir, train=True),
                                    batch_size=params["batch_size"], shuffle=True, num_workers=0)
 
-        model = build_model(params["backbone"]).to(DEVICE)
+        model = build_model(params["backbone"], fine_tune_degree=args.fine_tune_degree).to(DEVICE)
         criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
         optimizer = torch.optim.Adam(
             [p for p in model.parameters() if p.requires_grad], lr=params["learning_rate"]
@@ -145,7 +163,7 @@ def main() -> None:
         t0 = time.time()
         for epoch in range(args.epochs):
             epoch_t0 = time.time()
-            train_loss = train_one_epoch(model, train_loader, criterion, optimizer)
+            train_loss = train_one_epoch(model, train_loader, criterion, optimizer, args.fine_tune_degree)
             epoch_val = evaluate(model, val_loader, criterion)
             history["train_loss"].append(train_loss)
             history["val_loss"].append(epoch_val["loss"])
@@ -166,9 +184,9 @@ def main() -> None:
               f"accuracy={final_metrics['accuracy']:.3f}")
 
         log_row = {
-            "id": f"ann_initial_{i:03d}",
+            "id": f"{run_name}_{i:03d}",
             "date": date.today().isoformat(),
-            "model": f"ANN Initial ({params['backbone']}, frozen backbone)",
+            "model": f"{model_label} ({params['backbone']}, {fine_tune_desc})",
             "what_changed": f"hyperparameter search config {i + 1}/{args.n_configs}",
             "hyperparameters": json.dumps(params),
             "seed": args.seed,
