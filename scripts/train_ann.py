@@ -8,6 +8,10 @@ Model selection uses recall at P_MIN=0.30 directly (not a proxy like PR-AUC), si
 already fixed - see docs/primary_metric.md.
 
 Needs a GPU to run the full search in reasonable time; CPU is fine only for a tiny smoke test.
+
+--start-idx/--end-idx let the same fixed, seeded config list be split across multiple GPUs
+running concurrently (each given a different slice) to cut wall-clock time without changing
+which configs get run - see docs/ann_initial_training.md's infrastructure note.
 """
 
 import argparse
@@ -96,7 +100,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--n-configs", type=int, default=N_CONFIGS)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--seed", type=int, default=SEED)
-    return parser.parse_args()
+    parser.add_argument("--start-idx", type=int, default=0,
+                         help="First config index to run (inclusive) - for splitting the search across GPUs.")
+    parser.add_argument("--end-idx", type=int, default=None,
+                         help="Last config index to run (exclusive). Defaults to --n-configs (run everything).")
+    args = parser.parse_args()
+    if args.end_idx is None:
+        args.end_idx = args.n_configs
+    if not 0 <= args.start_idx < args.end_idx <= args.n_configs:
+        raise ValueError(f"need 0 <= start_idx < end_idx <= n_configs, got "
+                          f"start_idx={args.start_idx}, end_idx={args.end_idx}, n_configs={args.n_configs}")
+    return args
 
 
 def main() -> None:
@@ -112,11 +126,12 @@ def main() -> None:
                              batch_size=64, shuffle=False, num_workers=0)
 
     rng = np.random.default_rng(args.seed)
+    all_params = [sample_hyperparams(rng) for _ in range(args.n_configs)]
     args.model_out.parent.mkdir(parents=True, exist_ok=True)
     best = None
 
-    for i in range(args.n_configs):
-        params = sample_hyperparams(rng)
+    for i in range(args.start_idx, args.end_idx):
+        params = all_params[i]
         train_loader = DataLoader(MarcoDataset(train_df, args.data_dir, train=True),
                                    batch_size=params["batch_size"], shuffle=True, num_workers=0)
 
@@ -174,7 +189,8 @@ def main() -> None:
             )
 
     trainable, total = count_parameters(best["model"])
-    print(f"\nbest config saved to {args.model_out}: {best['params']}")
+    print(f"\nbest config in this run's slice [{args.start_idx}:{args.end_idx}] "
+          f"saved to {args.model_out}: {best['params']}")
     print(f"params: {trainable:,} trainable / {total:,} total")
     print(f"best metrics: {best['metrics']}")
 
