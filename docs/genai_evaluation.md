@@ -47,13 +47,13 @@ full-test-set evaluation.
 
 ## Comparison with every other model (test set)
 
-| Model | recall@P_MIN | Crystals PR-AUC | Accuracy | Inference latency* | Cost per 1000 predictions | Training data needed |
-|---|---|---|---|---|---|---|
-| Trivial benchmark | 0.000 | 0.124 | 0.480 | ~0 ms | $0 | none |
-| Classical baseline (LightGBM) | 0.937 | 0.678 | 0.812 | 0.03 ms (CPU) | $0 (after training) | ~10,261 labelled images |
-| Initial ANN (frozen) | 0.886 | 0.672 | 0.715 | 6.3 ms (GPU) | $0 (after training) | ~10,261 labelled images |
-| Final ANN (layer4) | **0.965** | **0.823** | 0.809 | 6.2 ms (GPU) | $0 (after training) | ~10,261 labelled images |
-| **GenAI (Claude Haiku 4.5), n=2,053** | **0.000** | 0.147 | 0.262 | 746 ms | **$0.66** | **zero** |
+| Model | recall@P_MIN | Crystals PR-AUC | Accuracy | Inference latency* | One-time training cost | Marginal cost / 1000 predictions | Training data needed |
+|---|---|---|---|---|---|---|---|
+| Trivial benchmark | 0.000 | 0.124 | 0.480 | ~0 ms | ~$0 (local CPU, <1s) | $0 | none |
+| Classical baseline (LightGBM) | 0.937 | 0.678 | 0.812 | 0.03 ms (CPU) | ~$0 (local CPU, 29s) | $0 | ~10,261 labelled images |
+| Initial ANN (frozen) | 0.886 | 0.672 | 0.715 | 6.3 ms (GPU) | ~$1.21 (RTX 4090, 3.57 GPU-hrs) | $0 | ~10,261 labelled images |
+| Final ANN (layer4) | **0.965** | **0.823** | 0.809 | 6.2 ms (GPU) | ~$1.22 (RTX 4090, 3.59 GPU-hrs) | $0 | ~10,261 labelled images |
+| **GenAI (Claude Haiku 4.5), n=2,053** | **0.000** | 0.147 | 0.262 | 746 ms | $0 (no training step) | **$0.66, forever** | **zero** |
 
 *Trained-model latencies are from their validation-phase measurements (`experiments/log.csv`,
 `baseline_lgbm_022`/`ann_initial_002`/`ann_final_008`) - `scripts/final_eval.py` doesn't
@@ -61,6 +61,19 @@ re-measure latency on test, and per-image inference cost doesn't depend on which
 image comes from, so these are a direct, valid proxy. GenAI's latency is measured on this
 evaluation's own test images (network round-trip time per call). Total GenAI cost for all
 2,053 images: $1.35.
+
+**"Training data needed = zero" for GenAI and "marginal cost = $0" for the trained models are
+two different claims, not the same thing** - worth being precise about this in the report. The
+former is about labelled images (GenAI needs none, zero-shot); the latter is about the cost of
+a prediction *after* training is already done (a local forward pass, no further spend). Neither
+means ANN training itself was free: it cost roughly $2.43 in real GPU rental (Initial + Final
+ANN searches combined, RunPod RTX 4090, from the logged `train_time_s` in `experiments/log.csv`
+converted at the actual hourly rate paid), plus an estimated further $3-5 lost to unreliable
+rented GPU pods during this project (stuck/broken instances killed before producing results,
+not attributable to any one model) - call it **~$6-8 total GPU spend** for the ANN training
+side of this project. GenAI's cost shape is structurally different: no training cost at all,
+but an unbounded *per-prediction* cost that would eventually overtake the ANNs' one-time
+training cost at any real deployment scale.
 
 **GenAI performed worse than every trained model, and worse than the trivial majority-class
 benchmark** on both the primary metric and accuracy. This is reported as-is, not softened -
