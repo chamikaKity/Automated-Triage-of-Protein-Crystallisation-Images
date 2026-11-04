@@ -82,6 +82,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--results-out", type=Path, default=Path("experiments/genai_test_results.csv"))
     parser.add_argument("--n-sample", type=int, default=N_SAMPLE)
     parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument("--id", type=str, default="genai_claude_haiku_000",
+                         help="Log row id - override to avoid colliding with a previous run's row.")
     return parser.parse_args()
 
 
@@ -141,7 +143,7 @@ def main() -> None:
     print(f"confusion matrix (order={CLASS_ORDER}): {cm}")
 
     log_row = {
-        "id": "genai_claude_haiku_000",
+        "id": args.id,
         "date": date.today().isoformat(),
         "model": f"GenAI ({MODEL}) - TEST sample n={len(rows)}",
         "what_changed": f"prompt={args.prompt_path.name}, sample_frac={frac:.3f}",

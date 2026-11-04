@@ -34,12 +34,16 @@ and locked in before any test image was touched. Both prompt files are kept in
 
 ## Test-set evaluation
 
-Evaluated on a **stratified random sample of 250 of the 2,053 test images** (proportional to
-each class's share: Clear 85, Crystals 31, Other 14, Precipitate 120), not the full test set -
-a deliberate cost/time trade-off given the project deadline, stated here explicitly rather than
-hidden. `scripts/eval_genai.py` does the sampling, the API calls, and the logging; results are
-in `experiments/log.csv` (`genai_claude_haiku_000`) and per-image in
-`experiments/genai_test_results.csv`.
+Evaluated on the **full 2,053-image test set**. A smaller stratified sample of 250 was run
+first (results kept as `genai_claude_haiku_000` in `experiments/log.csv` and
+`experiments/genai_test_results.csv`, for the record) to get a real cost/latency measurement
+before committing to the full run - it cost $0.16 and took a few minutes, which turned out
+cheap enough that there was no real reason not to run the full set, so that was done too
+(`genai_claude_haiku_full_000`, `experiments/genai_test_results_full.csv`). The two runs agree
+closely (accuracy 0.264 vs. 0.262, recall@P_MIN 0.000 in both), so the smaller sample's
+headline conclusion held up - the full run below is the one used for the official comparison
+table, being the more statistically robust and directly comparable to every other model's
+full-test-set evaluation.
 
 ## Comparison with every other model (test set)
 
@@ -49,28 +53,43 @@ in `experiments/log.csv` (`genai_claude_haiku_000`) and per-image in
 | Classical baseline (LightGBM) | 0.937 | 0.678 | 0.812 | 0.03 ms (CPU) | $0 (after training) | ~10,261 labelled images |
 | Initial ANN (frozen) | 0.886 | 0.672 | 0.715 | 6.3 ms (GPU) | $0 (after training) | ~10,261 labelled images |
 | Final ANN (layer4) | **0.965** | **0.823** | 0.809 | 6.2 ms (GPU) | $0 (after training) | ~10,261 labelled images |
-| **GenAI (Claude Haiku 4.5)** | **0.000** | 0.154 | 0.264 | 734 ms | **$0.66** | **zero** |
+| **GenAI (Claude Haiku 4.5), n=2,053** | **0.000** | 0.147 | 0.262 | 746 ms | **$0.66** | **zero** |
 
 *Trained-model latencies are from their validation-phase measurements (`experiments/log.csv`,
 `baseline_lgbm_022`/`ann_initial_002`/`ann_final_008`) - `scripts/final_eval.py` doesn't
 re-measure latency on test, and per-image inference cost doesn't depend on which split an
 image comes from, so these are a direct, valid proxy. GenAI's latency is measured on this
-evaluation's own 250 test images (network round-trip time per call).
+evaluation's own test images (network round-trip time per call). Total GenAI cost for all
+2,053 images: $1.35.
 
 **GenAI performed worse than every trained model, and worse than the trivial majority-class
 benchmark** on both the primary metric and accuracy. This is reported as-is, not softened -
-CLAUDE.md rule 7 requires it. Looking at the confusion matrix
-(`experiments/genai_test_results.csv`), the model over-uses "Other" as a catch-all (56 of 85
-Clear images called Other) and frequently confuses Precipitate with Crystals (36 of 120) -
-consistent with a general-purpose model that has never seen crystallisation microscopy images
-and has no learned sense of what distinguishes these four specific categories.
+CLAUDE.md rule 7 requires it. Looking at the full confusion matrix
+(`experiments/genai_test_results_full.csv`, order Clear/Crystals/Other/Precipitate):
+
+```
+            pred: Clear  Crystals  Other  Precipitate
+true Clear       223       44      418      16
+true Crystals      13      79      102      60
+true Other          16      22       45      30
+true Precipitate   107     365      323     190
+```
+
+The model over-uses "Other" as a catch-all (418 of 701 Clear images called Other - the single
+largest error in the whole matrix) and frequently confuses Precipitate with Crystals (365 of
+985) - consistent with a general-purpose model that has never seen crystallisation microscopy
+images and has no learned sense of what distinguishes these four specific categories. Notably,
+Crystals recall in raw terms isn't terrible (79/254 = 31% caught, plus partial credit via
+likelihood scores) but precision collapses because Precipitate is so often also called
+Crystals - exactly the kind of false-alarm-heavy behaviour the primary metric (recall at a
+precision floor) is designed to penalise.
 
 ## Discussion
 
 - **Performance:** every trained model beats GenAI by a wide margin on the primary metric.
   This is the headline result of this comparison - domain-specific training on even a modest
   (~10K image) dataset matters enormously for this task.
-- **Latency:** GenAI is 2-3 orders of magnitude slower per prediction (734ms vs. single-digit
+- **Latency:** GenAI is 2-3 orders of magnitude slower per prediction (746ms vs. single-digit
   milliseconds), because it's a network round-trip to a remote API rather than a local forward
   pass.
 - **Cost per prediction:** GenAI costs real money on every single prediction ($0.66 per 1,000
