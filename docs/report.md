@@ -289,6 +289,16 @@ HOG/LBP bins. What it does show concretely is that gradient-boosted trees are in
 inspectable at this level — in clear contrast to the ANN, which needed Grad-CAM/occlusion/LIME
 (Q5) just to get an approximate, non-provable sense of what influenced one prediction.*
 
+Unlike a single tree, **aggregate feature importance** (total split gain, summed across all
+200 trees) is representative of the whole ensemble, not one boosting round's idiosyncrasies:
+
+![Top 20 features by importance](figures/q3_baseline_feature_importance.png)
+
+The top 20 split exactly evenly between HOG (edge/gradient) and LBP (texture) features — 10
+each — and the single most important feature is an LBP (texture) one. This is consistent with
+the feature design rationale above: both signal types contribute meaningfully, neither
+dominates outright, supporting the choice to use both rather than either alone.
+
 ## Hyperparameter search
 
 Random search (seeded, `numpy.random.default_rng(42)`), 12 configs for the Initial ANN (frozen)
@@ -351,8 +361,15 @@ unproductive spend on unreliable rented GPU pods during this project (≈$3-5 mo
 **Supporting validation-phase figures** (model selection used only these, never test):
 
 ![Baseline hyperparameter search](figures/q3_baseline_search.png)
+![Baseline confusion matrix](figures/q3_baseline_confusion_matrix.png)
 ![Baseline PR curve](figures/q3_baseline_pr_curve.png)
 ![Initial ANN PR curve](figures/q3_ann_initial_pr_curve.png)
+
+The baseline's own validation confusion matrix above shows the same Precipitate-heavy
+confusion pattern that reappears in the Final ANN's test confusion matrix below — Precipitate
+is the largest source of error for both model families, not something specific to one
+architecture (consistent with Q1's observation that Precipitate overlaps visually with both
+Crystals and Other at the texture level).
 
 ## Error analysis by class, source institution, and image quality
 
