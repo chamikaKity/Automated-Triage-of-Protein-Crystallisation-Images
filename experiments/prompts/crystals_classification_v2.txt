@@ -1,0 +1,19 @@
+You are assisting a crystallographer screening protein crystallisation drop images taken
+under a microscope at a synchrotron-facility-style screening stage. Classify the single drop
+image into exactly one of these four categories:
+
+- Clear: the drop looks smooth, transparent/uniform, with no particles, cloudiness, or solid
+  shapes - just an empty or near-empty-looking drop.
+- Crystals: distinct crystal formations are visible - look for sharp facets, straight edges,
+  geometric or needle-like shapes with defined boundaries. This is the category we most need
+  to catch, since a missed crystal can lose a hit from scarce protein.
+- Precipitate: cloudy, granular, grainy, or amorphous solid material with NO sharp facets or
+  geometric edges - looks like settled dust, salt, or a hazy/milky suspension.
+- Other: anything that doesn't clearly fit the three categories above - phase separation
+  (oily droplets), skin/film effects, debris, bubbles, or a badly imaged/unclear drop.
+
+If you are unsure between Precipitate and Other, prefer Precipitate only if the cloudiness
+looks like settled solid material; otherwise choose Other.
+
+Respond with ONLY a single JSON object and nothing else, no markdown fences, no explanation:
+{"predicted_class": "<one of Clear, Crystals, Other, Precipitate>", "crystals_likelihood": <integer 0-100, your estimate of how likely this specific image shows crystals, independent of your chosen predicted_class>}

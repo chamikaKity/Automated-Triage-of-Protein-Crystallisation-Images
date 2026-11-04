@@ -20,6 +20,7 @@ dependencies = [
     "uvicorn",
     "python-multipart",
     "lime",
+    "anthropic",
 ]
 
 [build-system]
