@@ -27,6 +27,7 @@ report appendix.**
 | 2026-11-03 | Run the official test-set evaluation for all four models | `experiments/log.csv` (final_* rows) | Reviewed the full comparison table, including the genuine Initial-ANN-vs-baseline test/validation reversal |
 | 2026-11-04 | Build Grad-CAM and integrate it into the web app; build the Q5 XAI comparison (occlusion, LIME, sanity checks) | `src/marco/xai.py`, Grad-CAM in `app/backend/main.py`, `notebooks/04_xai.ipynb`, `docs/references.md` | Reviewed the three misclassified examples and the two sanity-check results |
 | 2026-11-04 | Build and run the Q6 GenAI evaluation (Claude Haiku 4.5, prompt selection, sample then full test set) | `experiments/prompts/*.txt`, `scripts/eval_genai.py`, `docs/genai_evaluation.md` | Decided to extend from a 250-image sample to the full test set once the real cost/time were known; reviewed the final comparison table and the (unflattering, honestly reported) result |
+| 2026-11-04 | Write this report, the Q2 architecture diagram, and the Q3 error-by-source/quality analysis | `docs/report.md`, `scripts/make_architecture_diagram.py`, `notebooks/05_error_analysis.ipynb` | Reviewed the error-analysis findings (underrepresented sources perform worse; largest files perform worst) before they were written up |
 
 ## Note on scope of use
 
