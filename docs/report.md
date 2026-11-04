@@ -274,6 +274,21 @@ is the point of a classical baseline: a meaningfully different approach from the
 weaker version of it. `class_weight='balanced'` handles the same Crystals minority-class
 problem (Q1 Finding 1) that motivates the ANN's class-weighted loss.
 
+One concrete illustration of this interpretability difference: a single tree from the trained
+ensemble (first boosting round, `Crystals` class — LightGBM's multiclass objective trains one
+tree per class per round) can be read directly as a sequence of threshold rules, something no
+equivalent single component of the ANN can offer.
+
+![One tree from the LightGBM ensemble (Crystals class, first round)](figures/q3_baseline_tree.png)
+
+*Read honestly: this is one of 200 trees in the ensemble, not the model's full decision logic
+— boosted trees only make sense in aggregate. The splits are also on anonymous `Column_N`
+indices into the 1924-dim HOG+LBP feature vector, not human-readable feature names, so the
+tree's actual thresholds aren't independently meaningful without mapping back to specific
+HOG/LBP bins. What it does show concretely is that gradient-boosted trees are inherently
+inspectable at this level — in clear contrast to the ANN, which needed Grad-CAM/occlusion/LIME
+(Q5) just to get an approximate, non-provable sense of what influenced one prediction.*
+
 ## Hyperparameter search
 
 Random search (seeded, `numpy.random.default_rng(42)`), 12 configs for the Initial ANN (frozen)
