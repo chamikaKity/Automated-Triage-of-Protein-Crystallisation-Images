@@ -170,6 +170,13 @@ simple classifier head: `Dropout(0.4)` → `Linear(in_features, 4)`. Two fine-tu
 used across the project (see Q3): **frozen** (only the head trains — the Initial ANN) and
 **layer4** (the backbone's last residual block also trains — the Final ANN).
 
+![Architecture diagram](figures/q2_architecture.png)
+
+*Figure: layer-by-layer shape and parameter counts (`scripts/make_architecture_diagram.py`,
+read directly from the constructed model, not hand-copied). Blue = always frozen
+(ImageNet-pretrained); orange = `layer4`, frozen in the Initial ANN and trainable in the Final
+ANN; green = the head, always trainable.*
+
 | | ResNet18 | ResNet34 |
 |---|---|---|
 | Total parameters | 11,178,564 | 21,286,724 |
