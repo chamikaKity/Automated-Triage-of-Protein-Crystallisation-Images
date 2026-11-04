@@ -7,6 +7,7 @@ ANN (layer4+head unfrozen), the best model by the primary metric - see
 docs/ann_initial_training.md and experiments/log.csv.
 """
 
+import base64
 import io
 import json
 from pathlib import Path
@@ -14,10 +15,12 @@ from pathlib import Path
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
+from matplotlib import cm
 from PIL import Image, UnidentifiedImageError
 
 from marco.data import CLASS_ORDER, build_transforms
 from marco.model import build_model
+from marco.xai import GradCAM
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 MODEL_PATH = PROJECT_ROOT / "experiments" / "models" / "ann_final.pt"
@@ -45,6 +48,24 @@ model = build_model(params["backbone"])
 model.load_state_dict(torch.load(MODEL_PATH, map_location="cpu"))
 model.eval()
 transform = build_transforms(train=False)
+grad_cam = GradCAM(model)
+
+GRADCAM_EXPLANATION = (
+    "Red/yellow shows where the model's gradients were most sensitive for this prediction - "
+    "not proof of the true reason for the prediction, just supporting evidence of what "
+    "influenced it. See notebooks/04_xai.ipynb for method comparisons and sanity checks."
+)
+
+
+def make_overlay(img: Image.Image, heatmap) -> str:
+    """Blend a Grad-CAM heatmap over the (resized) input image, return as a data: URL."""
+    img_resized = img.resize((224, 224))
+    colored = (cm.jet(heatmap)[:, :, :3] * 255).astype("uint8")
+    heat_img = Image.fromarray(colored).convert("RGB")
+    overlay = Image.blend(img_resized, heat_img, alpha=0.45)
+    buf = io.BytesIO()
+    overlay.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 @app.get("/")
@@ -70,9 +91,14 @@ async def predict(file: UploadFile = File(...)):
     scores = {cls: round(float(p), 4) for cls, p in zip(CLASS_ORDER, probs)}
     predicted = max(scores, key=scores.get)
 
+    heatmap = grad_cam(tensor, CLASS_ORDER.index(predicted))
+    gradcam_overlay = make_overlay(img, heatmap)
+
     return JSONResponse({
         "predicted_class": predicted,
         "class_scores": scores,
         "explanation": EXPLANATION,
         "limitations": LIMITATIONS,
+        "gradcam_overlay": gradcam_overlay,
+        "gradcam_explanation": GRADCAM_EXPLANATION,
     })

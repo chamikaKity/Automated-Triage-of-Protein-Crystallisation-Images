@@ -18,6 +18,7 @@
   .note { font-size: 0.85rem; color: #555; margin-top: 16px; line-height: 1.4; }
   #error { color: #b00020; margin-top: 12px; }
   #preview { max-width: 100%; max-height: 240px; margin-top: 12px; border-radius: 6px; display: none; }
+  #gradcam { max-width: 100%; max-height: 280px; border-radius: 6px; display: block; margin-top: 8px; }
   button { padding: 8px 16px; font-size: 1rem; cursor: pointer; }
 </style>
 </head>
@@ -95,6 +96,9 @@
       }
       html += `<div class="note"><strong>What this means:</strong> ${data.explanation}</div>`;
       html += `<div class="note"><strong>Limitations:</strong> ${data.limitations}</div>`;
+      html += `<h3>Grad-CAM: where the model looked</h3>`;
+      html += `<img id="gradcam" src="${data.gradcam_overlay}" alt="Grad-CAM overlay">`;
+      html += `<div class="note">${data.gradcam_explanation}</div>`;
       resultDiv.innerHTML = html;
     }
   </script>
