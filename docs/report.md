@@ -257,6 +257,23 @@ an explicit, honest caveat that validation PR-AUC actually favoured the baseline
 *Source: `scripts/train_ann.py`, `scripts/final_eval.py`, `experiments/log.csv`,
 `notebooks/03_ann_initial.ipynb`, `docs/ann_initial_training.md`.*
 
+## Classical baseline: model and feature choice
+
+LightGBM (gradient-boosted trees) on hand-crafted **HOG + LBP** features
+(`src/marco/features.py`), chosen over XGBoost and SVM after comparing the three on
+implementation complexity, training speed, and native multiclass + feature-importance support
+— LightGBM's histogram-based splitting trains fast enough on ~10K images to afford a search
+budget of the same order as the ANN (CLAUDE.md's fair-comparison rule), without SVM's poor
+scaling to thousands of samples or XGBoost's slower default training on this data size. HOG
+(histogram of oriented gradients) targets edge/gradient structure — crystal facets and needle
+shapes have sharp, consistent edges that HOG is designed to capture; LBP (local binary
+patterns) targets local texture — precipitate's grainy, granular appearance versus Clear's
+smooth uniformity is a texture distinction, not an edge one. Together they give the model two
+complementary, interpretable signal types without needing a learned feature extractor, which
+is the point of a classical baseline: a meaningfully different approach from the ANN, not a
+weaker version of it. `class_weight='balanced'` handles the same Crystals minority-class
+problem (Q1 Finding 1) that motivates the ANN's class-weighted loss.
+
 ## Hyperparameter search
 
 Random search (seeded, `numpy.random.default_rng(42)`), 12 configs for the Initial ANN (frozen)
