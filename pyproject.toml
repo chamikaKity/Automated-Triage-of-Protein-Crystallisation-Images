@@ -19,6 +19,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "python-multipart",
+    "lime",
 ]
 
 [build-system]
