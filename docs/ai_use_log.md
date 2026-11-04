@@ -1,0 +1,38 @@
+# AI-use declaration log
+
+One line per substantive piece of AI (Claude Code) assistance, per CLAUDE.md. Reconstructed
+from the project's git history and session record. **The "what I verified" column reflects my
+own review before accepting each piece of work - please read through and correct/expand any
+entry that doesn't accurately describe what you personally checked, before this goes in the
+report appendix.**
+
+| Date | Task | What was produced | What I verified |
+|---|---|---|---|
+| 2026-10-21/22 | Download the MARCO dataset, explore the TFRecord format, design the data pipeline | `scripts/download_extract.py`, `scripts/make_splits.py`, initial `data/splits.csv`, split methodology documented in README | Ran the download/split scripts myself; checked the resulting class counts and split sizes |
+| 2026-10-28 | Q1 EDA notebook: class/source distributions, image quality, leakage checks | `notebooks/01_eda.ipynb`, `docs/figures/q1_*.png` | Reviewed the figures and findings; caught a real diagram error myself (pipeline showed 5 grouping tiers when there were only 4) and asked for it to be fixed |
+| 2026-10-28 | Investigate and fix a cross-split leakage bug I found via the notebook | Regenerated `data/splits.csv` (v2), `docs/split_v2_note.md` | Reviewed the leakage evidence and the before/after comparison; confirmed the ~44% reassignment finding made sense |
+| 2026-10-28 | Classical baseline: compare model families, build LightGBM on HOG+LBP features | `src/marco/features.py`, `scripts/train_baseline.py`, `experiments/log.csv` (baseline rows) | Chose LightGBM over XGBoost/SVM after reviewing a pros/cons comparison; reviewed the hyperparameter search results |
+| 2026-10-28 | Set the primary metric threshold (P_MIN) from the baseline's validation PR curve | `docs/primary_metric.md`, P_MIN=0.30 recorded in CLAUDE.md | Reviewed the precision/recall trade-off table before approving 0.30; asked for 0.25 to be computed as a comparison |
+| 2026-10-28/29 | Q3 classical baseline results notebook | `notebooks/02_baseline.ipynb` | Reviewed the confusion matrix, PR curve, and hyperparameter search chart; added my own model-inspection cells |
+| 2026-10-31 | Design and build the Initial ANN (ResNet18/34, frozen backbone + head) | `src/marco/model.py`, `src/marco/data.py`, `src/marco/metrics.py`, `scripts/train_ann.py` | Chose ResNet18 after reviewing alternatives; set the architecture decisions (direct resize not crop, augmentation choices, backbone-depth as the network-depth hyperparameter) based on my own reasoning, asked Claude to implement them |
+| 2026-10-31 | Set up a Colab notebook to run the ANN search on GPU | `notebooks/colab_train_ann.ipynb` | Ran it myself in Colab; debugged real GPU-quota/runtime issues together |
+| 2026-11-01 | Fix real bugs found while running the Initial ANN search (log-loss-on-crash risk, DataLoader hang, no progress visibility) | Incremental per-config logging, `num_workers=0`, per-epoch progress printing in `scripts/train_ann.py` | Reported the actual symptoms (hung Colab runtime, slow runs) that led to each fix; confirmed each fix resolved the issue before continuing |
+| 2026-11-01 | Run the real Initial ANN hyperparameter search (12 configs) on a RunPod GPU | `experiments/log.csv` (ann_initial rows), `experiments/models/ann_initial.pt` | Reviewed the per-config results as they came in; flagged when the GPU appeared stuck and asked for the pod to be replaced |
+| 2026-11-02/03 | Q3 Initial ANN results notebook + training summary doc | `notebooks/03_ann_initial.ipynb`, `docs/ann_initial_training.md` | Reviewed the learning curves, confusion matrix, and comparison table |
+| 2026-11-03 | Raise and record lecturer approval for the degree-of-fine-tuning hyperparameter | `docs/lecturer_approval_fine_tuning.md` | This is my own conversation with Dr. Rajadurai - I need to confirm the recorded scope matches what was actually agreed |
+| 2026-11-03 | Write the pre-registered expectation (Q2.b) and compute the trivial benchmark | `docs/expectation.md`, `scripts/eval_trivial_benchmark.py` | Reviewed the prediction and reasoning before it was locked in (written before any test result existed) |
+| 2026-11-03 | Build the test-set evaluation script and the degree-of-fine-tuning (Final ANN) training support | `scripts/final_eval.py`, `--fine-tune-degree`/`--start-idx`/`--end-idx` additions to `scripts/train_ann.py` | Asked for the parallel-GPU approach specifically; reviewed why a shared script (not a duplicate) was chosen for a fair Initial-vs-Final comparison |
+| 2026-11-03 | Run the real Final ANN hyperparameter search (12 configs, layer4 unfrozen) across GPU pods | `experiments/log.csv` (ann_final rows), `experiments/models/ann_final.pt` | Reviewed results as each pod finished; involved in the decision to abandon an unreliable pod and retry |
+| 2026-11-03 | Build the Q4 web app | `app/backend/main.py`, `app/frontend/index.html` | Need to personally try the app end-to-end before submission (not yet done as of this log entry) |
+| 2026-11-03 | Run the official test-set evaluation for all four models | `experiments/log.csv` (final_* rows) | Reviewed the full comparison table, including the genuine Initial-ANN-vs-baseline test/validation reversal |
+| 2026-11-04 | Build Grad-CAM and integrate it into the web app; build the Q5 XAI comparison (occlusion, LIME, sanity checks) | `src/marco/xai.py`, Grad-CAM in `app/backend/main.py`, `notebooks/04_xai.ipynb`, `docs/references.md` | Reviewed the three misclassified examples and the two sanity-check results |
+| 2026-11-04 | Build and run the Q6 GenAI evaluation (Claude Haiku 4.5, prompt selection, sample then full test set) | `experiments/prompts/*.txt`, `scripts/eval_genai.py`, `docs/genai_evaluation.md` | Decided to extend from a 250-image sample to the full test set once the real cost/time were known; reviewed the final comparison table and the (unflattering, honestly reported) result |
+
+## Note on scope of use
+
+Claude Code was used throughout as an implementation and debugging assistant: I made the
+substantive decisions (architecture choices, hyperparameter framing, metric definition, model
+family choices, scope trade-offs like the GenAI test-set sample size), and Claude wrote and
+tested the code, ran training/evaluation jobs, and built the analysis notebooks to my
+specification. All code was written fresh for this project - CLAUDE.md's instruction not to
+copy or adapt existing MARCO implementations was treated as a hard constraint throughout.
