@@ -360,10 +360,12 @@ unproductive spend on unreliable rented GPU pods during this project (≈$3-5 mo
 
 **Supporting validation-phase figures** (model selection used only these, never test):
 
-![Baseline hyperparameter search](figures/q3_baseline_search.png)
-![Baseline confusion matrix](figures/q3_baseline_confusion_matrix.png)
-![Baseline PR curve](figures/q3_baseline_pr_curve.png)
-![Initial ANN PR curve](figures/q3_ann_initial_pr_curve.png)
+<div style="display:flex; flex-wrap:wrap; gap:4%; align-items:flex-start;">
+<div style="width:48%;"><img src="figures/q3_baseline_search.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Baseline hyperparameter search</p></div>
+<div style="width:48%;"><img src="figures/q3_baseline_confusion_matrix.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Baseline confusion matrix</p></div>
+<div style="width:48%;"><img src="figures/q3_baseline_pr_curve.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Baseline PR curve</p></div>
+<div style="width:48%;"><img src="figures/q3_ann_initial_pr_curve.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Initial ANN PR curve</p></div>
+</div>
 
 The baseline's own validation confusion matrix above shows the same Precipitate-heavy
 confusion pattern that reappears in the Final ANN's test confusion matrix below — Precipitate
