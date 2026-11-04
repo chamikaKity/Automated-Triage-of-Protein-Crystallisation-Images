@@ -484,6 +484,7 @@ real method disagreement rather than glossed over, since the three methods measu
 things (local gradient sensitivity vs. whole-block removal effect).
 
 **Two required sanity checks:**
+
 1. **Occlude the Grad-CAM region, check the prediction changes:** covering the highlighted
    region on the false-alarm case dropped the predicted Crystals probability from 0.624 to
    0.136.
