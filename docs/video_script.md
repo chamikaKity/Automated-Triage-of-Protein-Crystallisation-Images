@@ -41,14 +41,27 @@ PYTHONPATH=src uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
 
 ---
 
-## 0:35–0:50 — Data download (0:15)
+## 0:35–[TBD, ~1:40] — Data download (~1:05) — TIMING NOT YET ADJUSTED, see note at bottom
 
-**Show:** terminal — `scripts/download_extract.py` and `data/splits.csv` head.
+**Show:** terminal — `scripts/download_extract.py`; `notebooks/00_download_explore.ipynb`'s
+per-shard and pooled chi-square cells; `data/splits.csv` head.
 
-> The data comes from MARCO — about 14,400 images across 15 shards, split once into
-> train/validation/test and fixed in `data/splits.csv`. I made sure images of the same physical
-> drop never span two splits — I actually found and fixed a real leak this way, where 44% of
-> images moved once I corrected it.
+> The full MARCO dataset is large: about 463,000 images, around 55 gigabytes, stored as TFRecord
+> files split into shards. The training part alone has 407 shards of about 1,000 images each.
+>
+> To understand the data, I first downloaded one shard and counted how many images were in each
+> of the four classes. Then I wanted to know: do all the shards have a similar class mix? So I
+> downloaded two more shards from different parts of the dataset and compared them.
+>
+> The share of Crystals images was close in all three shards: 11.8, 13.2 and 14.8 percent. The
+> full dataset has 12.8 percent. One shard alone can be a little off, but together the three
+> shards matched the full dataset well.
+>
+> This told me that a sample made from several shards would represent the whole dataset, so I
+> used 15 shards, about 14,400 images, for this project — split once into train/validation/test
+> and fixed in `data/splits.csv`. I also made sure images of the same physical drop never span
+> two splits — I actually found and fixed a real leak this way, where 44% of images moved once I
+> corrected it.
 
 ---
 
@@ -250,10 +263,15 @@ Final ANN confidently misclassifies.
 
 ## Timing budget check
 
+**STALE — not yet updated for the longer Data download narration below.** Data download grew
+from ~15s to ~1:05 (147+ words). Everything from Data download onward in this table is wrong
+until the next retime pass; total is currently well over 8:00. Content correctness was
+prioritised first per instruction — do not record from these timestamps yet.
+
 | Section | Duration | Running total |
 |---|---|---|
 | Intro | 0:35 | 0:35 |
-| Data download | 0:15 | 0:50 |
+| Data download | ~1:05 (was 0:15) | ~1:40 (stale) |
 | EDA | 0:45 | 1:35 |
 | Classical baseline | 0:40 | 2:15 |
 | Initial ANN + RunPod | 1:05 | 3:20 |
