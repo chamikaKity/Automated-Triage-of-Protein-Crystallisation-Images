@@ -11,12 +11,13 @@ time hunting for files:**
 1. Terminal, repo root
 2. `notebooks/01_eda.ipynb` (rendered, scrolled to the class/source distribution charts)
 3. `notebooks/02_baseline.ipynb` (scrolled to the confusion matrix / PR curve)
-4. `notebooks/03_ann_initial.ipynb` (learning curves)
-5. `docs/report.md`'s "Model Comparison (Q3)" section (or the PDF, page showing it)
+4. `notebooks/03_ann_initial.ipynb` and `notebooks/06_ann_final.ipynb` (learning curves for both)
+5. `docs/report.md`'s "ANN: Initial and Final Models (Q2, Q3)" section (the side-by-side search/learning-curve figures) and "Model Comparison (Q3)" section (the comparison table)
 6. Browser at `http://127.0.0.1:8000` (confirm the backend is running — see below)
 7. `notebooks/04_xai.ipynb` (Grad-CAM/occlusion/LIME comparison figure)
 8. `docs/genai_evaluation.md`'s comparison table
-9. The false-negative test image ready to upload: `data/raw/Crystals/X0000045910743200502112353.png`
+9. The three ready-to-upload misclassified test images in `data/demo_errors/` — the false
+   negative (`01_crystals_false_negative.png`) is the one used live in the demo below
 
 **Start the backend before recording:**
 ```
@@ -123,12 +124,19 @@ hyperparameter search bar chart.
 
 ## 3:20–4:30 — Final ANN: 4th hyperparameter, comparison table, error analysis (1:10)
 
-**Show:** `docs/report.md`'s "Model Comparison (Q3)" section (or the PDF page).
+**Show:** the side-by-side search/learning-curve figures in `docs/report.md`'s "ANN: Initial
+and Final Models (Q2, Q3)" section first, then its "Model Comparison (Q3)" section for the
+table (or the PDF pages).
 
 > With the lecturer's approval, I added a fourth hyperparameter: degree of fine-tuning — frozen
 > versus unfreezing the backbone's last block, `layer4`, alongside the head. That gives the
 > model real capacity to adapt its highest-level features to crystallisation images specifically,
 > not just reuse ImageNet features as-is.
+
+> You can see the effect directly in these two charts — the Final ANN's 12-config search sits
+> uniformly higher than the Initial ANN's, and unlike the Initial ANN, its training loss keeps
+> falling across all 12 epochs instead of plateauing after the first, because there's now real
+> capacity left to learn from.
 
 > Here's the full comparison on the held-out test set, each model run exactly once through
 > `final_eval.py`:
@@ -147,11 +155,12 @@ hyperparameter search bar chart.
 > actually unfroze part of the backbone; the frozen version alone wasn't enough.
 
 > I also did a proper error analysis on the Final ANN's test errors, not just the aggregate
-> number. Breaking accuracy down by source institution shows real spread — 60% on the two
-> smallest, most underrepresented sources, up to 85% on the largest — directly confirming the
-> EDA's source-imbalance finding on held-out data, not just a hypothesis. And Precipitate is the
-> single biggest source of confusion for every other class, on both the baseline and the ANN —
-> so that's a dataset-level pattern, not something specific to one architecture.
+> number. Breaking accuracy down by source institution shows real spread — 60 to 69% on the two
+> smallest, most underrepresented sources, versus up to 85% on the best-performing one — directly
+> confirming the EDA's source-imbalance finding on held-out data, not just a hypothesis. And
+> Precipitate is the single biggest source of confusion for every other class, on both the
+> baseline and the ANN — so that's a dataset-level pattern, not something specific to one
+> architecture.
 
 ---
 
@@ -188,7 +197,7 @@ first (e.g. a clear Crystals example).
 
 ## 6:10–6:55 — A real incorrect prediction (0:45) — required
 
-**Show:** upload `data/raw/Crystals/X0000045910743200502112353.png` — a true Crystals image the
+**Show:** upload `data/demo_errors/01_crystals_false_negative.png` — a true Crystals image the
 Final ANN confidently misclassifies.
 
 > Now let me show a real failure — this is actually required in my brief, and it's important:
