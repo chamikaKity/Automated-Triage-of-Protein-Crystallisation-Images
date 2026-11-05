@@ -63,24 +63,36 @@ per-shard and pooled chi-square cells; `data/splits.csv` head.
 
 ---
 
-## 0:50–1:35 — EDA (0:45)
+## EDA — TIMING NOT YET SET (content only, per instruction)
 
-**Show:** `01_eda.ipynb` — class distribution bar chart, then source-distribution chart.
+**Show:** `01_eda.ipynb` — leakage-grouping cells, `scripts/make_splits.py`, the chi-square
+cell, then the class distribution / source distribution / image-size charts.
 
-> Three things from the EDA shaped everything downstream. First, Crystals is a real minority
-> class — about 12% of the data — and the cost of missing one is much higher than a false alarm,
-> which is why I never use plain accuracy as the headline metric. Instead my primary metric is
-> **recall on Crystals at a fixed minimum precision of 0.30** — set from the baseline's own
-> validation precision-recall curve, so the threshold isn't arbitrary.
-
-> Second, class mix varies sharply by source institution — one source is 62% of all the data but
-> only has 4.9% Crystals, while a tiny source has 45% Crystals — a nine-times swing. That's a
-> real risk of the model implicitly overfitting to the dominant institution's imaging style, and
-> it shows up later in my error analysis.
-
-> Third, image sizes aren't standardised — anywhere from 632×504 up to 2448×2048 — so
-> preprocessing needed an explicit, documented resize strategy rather than assuming a fixed
-> input size.
+> Next, the exploratory data analysis.
+>
+> Leakage control. The same well is often photographed more than once, and a well can hold
+> several drops. If those images ended up in both training and testing, the test score would
+> look better than it really is. So I read the plate and well numbers from the filenames and
+> gave every image a group key. Images from the same plate and well share a key.
+>
+> Splitting the data. I then split the data into training, validation and test sets, roughly 70,
+> 15 and 15 percent, using scikit-learn's StratifiedGroupKFold. "Group" means whole groups stay
+> together, so no well crosses a split. "Stratified" means each set keeps a similar class
+> balance. I saved the split as a CSV file with each image's ID, label, group key and split.
+> Every model uses this same file, and I can check at any time that no group crosses a split.
+>
+> Is the sample representative? On the training and validation images, I ran a chi-square test
+> against the class counts of the full MARCO dataset. There was no significant difference, so my
+> sample reflects the population.
+>
+> Exploring the data. I plotted the class distribution, the source institutions, and the image
+> sizes for each class. Image sizes vary widely, which is why every image is resized before
+> training.
+>
+> Key finding. Only about 12 percent of images contain crystals, and missing one is worse than a
+> false alarm. So instead of accuracy, my main measure is how many real crystals the model
+> finds, while at least 3 in every 10 flagged drops really contain crystals. This 30 percent
+> level came from the baseline's validation results and is used for every model.
 
 ---
 
