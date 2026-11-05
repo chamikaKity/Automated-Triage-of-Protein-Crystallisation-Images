@@ -343,8 +343,11 @@ is the fine-tuning degree:
 | Network depth | ResNet18, ResNet34 | Required (3 of 3) |
 | Degree of fine-tuning | frozen, layer4 | Optional 4th, lecturer-approved |
 
-This is 12 of the full 4×3×2=24-point grid per fine-tuning degree — the same order of magnitude
-as the classical baseline's 24-config search (CLAUDE.md's fair-comparison rule). Optimiser:
+Each of the 12 configs independently samples a backbone, learning rate, and batch size from
+this 4×3×2=24-point grid (not 12 unique points drawn without replacement) — in practice this
+gave 11 unique combinations with one repeat (`resnet34`, lr=0.001, batch=32, tested twice), the
+same order of magnitude as the classical baseline's 24-config search (CLAUDE.md's
+fair-comparison rule). Optimiser:
 Adam for all ANN configs; the classical baseline's gradient boosting (LightGBM) is the second,
 mechanically different optimiser required by the coursework, compared directly on the same task.
 

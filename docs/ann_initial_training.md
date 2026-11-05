@@ -44,9 +44,12 @@ Two things were deliberately **not** swept here, both pending the lecturer's sig
 
 ## Search method
 
-12 configs, randomly sampled (`numpy.random.default_rng(seed=42)`) from the 4x3x2 = 24-point
-grid above - half the full grid, same order of magnitude as the classical baseline's 24-config
-search (CLAUDE.md's fair-comparison rule). Each config trains for all 12 epochs; the config
+12 configs; each independently samples a backbone, learning rate, and batch size
+(`numpy.random.default_rng(seed=42)`) from the 4x3x2 = 24-point grid above, not 12 unique
+points drawn without replacement - in practice this gave 11 unique combinations with one
+repeat (`resnet34`, lr=0.001, batch=32, tested twice). Same order of magnitude as the classical
+baseline's 24-config search (CLAUDE.md's fair-comparison rule). Each config trains for all 12
+epochs; the config
 with the best `recall@P_MIN` (the primary metric itself, not a proxy) is kept.
 
 ## Results
