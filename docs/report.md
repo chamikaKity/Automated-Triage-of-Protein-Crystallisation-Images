@@ -222,8 +222,9 @@ equivalent single component of the ANN can offer.
 
 ![One tree from the LightGBM ensemble (Crystals class, first round)](figures/q3_baseline_tree.png)
 
-*Read honestly: this is one of 200 trees in the ensemble, not the model's full decision logic
-— boosted trees only make sense in aggregate. The splits are also on anonymous `Column_N`
+*Read honestly: this is one of 800 trees in the ensemble (200 boosting rounds × 4 classes —
+`clf.booster_.num_trees()` confirms this directly), not the model's full decision logic —
+boosted trees only make sense in aggregate. The splits are also on anonymous `Column_N`
 indices into the 1924-dim HOG+LBP feature vector, not human-readable feature names, so the
 tree's actual thresholds aren't independently meaningful without mapping back to specific
 HOG/LBP bins. What it does show concretely is that gradient-boosted trees are inherently
@@ -231,7 +232,8 @@ inspectable at this level — in clear contrast to the ANN, which needed Grad-CA
 (Q5) just to get an approximate, non-provable sense of what influenced one prediction.*
 
 Unlike a single tree, **aggregate feature importance** (total split gain, summed across all
-200 trees) is representative of the whole ensemble, not one boosting round's idiosyncrasies:
+800 trees — all 4 classes, not just Crystals) is representative of the whole ensemble, not one
+boosting round's idiosyncrasies:
 
 ![Top 20 features by importance](figures/q3_baseline_feature_importance.png)
 
