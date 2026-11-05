@@ -575,6 +575,13 @@ loss rose to 2.85 instead of falling, and recall collapsed to 0.622. High learni
 with a small batch size destabilised training. Logged as-is in `experiments/log.csv`, not
 re-run or hidden.
 
+![Final validation loss per config - the failed experiment in context](figures/q3_ann_initial_failure.png)
+
+*A full loss-over-epochs curve isn't shown here, since per-epoch history was only saved for the
+best config, not every config in the search — plotting each config's logged final loss instead
+makes the same point honestly: config 10's final loss (2.85) is a dramatic outlier against the
+other 11 configs' tight 0.854–1.064 range, not just the lowest recall bar in the earlier chart.*
+
 ### Unsuccessful experiment 4: GenAI prompt v2
 
 In the prompt comparison described in GenAI Evaluation (Q6), above, v2 underperforms v1 on both
@@ -745,6 +752,7 @@ produced and what I personally verified — is in `docs/ai_use_log.md` and repro
 | Add per-shard chi-square tests (shards 1, 100, 300 vs. the full population) to `00_download_explore.ipynb` | `notebooks/00_download_explore.ipynb` | Asked for the 3-shard test specifically; the real result was mixed (shard 300 significant at p=0.016, shards 1/100 not) rather than a clean confirmation - reviewed and kept the honest, nuanced interpretation rather than only reporting the two shards that agreed |
 | Add a pooled (3-shard combined) chi-square test to `00_download_explore.ipynb`, correctly summing counts before testing rather than averaging p-values | `notebooks/00_download_explore.ipynb` | Asked specifically for the pooled test; confirmed the real result (chi2=4.528, p=0.210, not significant) before writing that it resolves shard 300's individual significance as noise, rather than assuming it would |
 | Add the 3-shard chi-square check (per-shard + pooled) to `docs/report.md` as the stated reason 15 shards were pulled, not just 1-2 | `docs/report.md` | Checked the numbers against the already-verified notebook output before adding them to the report; confirmed page count was unaffected |
+| Fix "12 configs = 12 unique grid points" wording (actually 11 unique + 1 repeat) in `docs/report.md`/`docs/ann_initial_training.md`; add a final-validation-loss-per-config figure to `notebooks/03_ann_initial.ipynb` for the failed-experiment writeup, since no per-epoch history exists for non-best configs | `notebooks/03_ann_initial.ipynb`, `docs/figures/q3_ann_initial_failure.png`, updates to `docs/report.md`/`docs/ann_initial_training.md` | Caught the duplicate-combination nuance myself by checking experiments/log.csv directly; confirmed a per-epoch loss curve for the failed config wasn't possible (data doesn't exist) before choosing the honest alternative instead of fabricating one |
 
 **Note:** several "what I verified" entries above still need your personal confirmation or
 correction before submission (flagged individually in `docs/ai_use_log.md`) — in particular
