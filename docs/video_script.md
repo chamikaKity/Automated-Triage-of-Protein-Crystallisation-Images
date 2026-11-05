@@ -43,7 +43,7 @@ PYTHONPATH=src uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
 
 ## 0:35–[TBD, ~1:40] — Data download (~1:05) — TIMING NOT YET ADJUSTED, see note at bottom
 
-**Show:** terminal — `scripts/download_extract.py`; `notebooks/00_download_explore.ipynb`'s
+**Show:** open `scripts/download_extract.py` in the editor; `notebooks/00_download_explore.ipynb`'s
 per-shard and pooled chi-square cells; `data/splits.csv` head.
 
 > The full MARCO dataset is large: about 463,000 images, around 55 gigabytes, stored as TFRecord
@@ -58,7 +58,8 @@ per-shard and pooled chi-square cells; `data/splits.csv` head.
 > shards matched the full dataset well.
 >
 > This told me that a sample made from several shards would represent the whole dataset, so I
-> used 15 shards, about 14,400 images, for this project.
+> used 15 shards, about 14,400 images, for this project. This is the script that does the actual
+> download and extraction — `scripts/download_extract.py`.
 
 ---
 
