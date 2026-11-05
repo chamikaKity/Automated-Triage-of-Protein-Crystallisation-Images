@@ -3,9 +3,16 @@
 *Individual MSc Data Science AI coursework. Code: this repository. Experiment log:
 `experiments/log.csv`. AI-use declaration: `docs/ai_use_log.md`.*
 
+**Report structure:** this report follows the project's actual workflow rather than a strict
+Q1→Q6 reading order. Every section is tagged with the brief question(s) it covers, and all six
+(Q1–Q6) are present: Dataset Description and EDA (Q1) → Classical Baseline (Q3) → ANN: Initial
+and Final Models (Q2, Q3) → Model Comparison (Q3) → Explainable AI (Q5) → GenAI Evaluation (Q6)
+→ Full Model Comparison incl. GenAI (Q3, Q6) → Unsuccessful Experiments (Q3, Q6) → Error
+Predictions and Analysis (Q3, Q5) → Web Application (Q4).
+
 ---
 
-# Q1 — Dataset Description and EDA
+# Dataset Description and EDA (Q1) {.pagebreak}
 
 *Source: `notebooks/01_eda.ipynb`, `scripts/download_extract.py`, `scripts/make_splits.py`.
 Figures in `docs/figures/`.*
@@ -64,7 +71,8 @@ contribute only 371 and 225 images respectively.
 
 The Crystals rate swings nearly 9x across institutions (4.9% to 45.3%), and the single most
 common institution (source 3, 62% of the data) has the *lowest* Crystals rate. See Finding 2
-below — and Q3's error analysis, where this prediction is borne out on the test set.
+below — and the Error Predictions and Analysis section (Q3), where this prediction is borne out
+on the test set.
 
 **Image size and quality** (dimensions sampled, n=500, seed=42): image dimensions are not
 standardised — sizes range from 632×504 to 2448×2048, with 1280×960 as the single most common
@@ -161,7 +169,8 @@ family (classical baseline, every ANN variant, GenAI evaluation).
    Crystals, while source 0 has 45.3% Crystals — a 9x swing. Since one institution dominates the
    pool, a model could end up implicitly tuned to that institution's imaging style and
    under-perform on the others. This bears directly on the web app's stated limitation about
-   unseen imagers (Q4) and is confirmed on the test set in Q3's error analysis.
+   unseen imagers (Q4) and is confirmed on the test set in the Error Predictions and Analysis
+   section.
 3. **Image dimensions are not standardised.** A 500-image sample spans 632×504 up to 2448×2048,
    with 1280×960 as the dominant but not universal size (~70%). This constrains preprocessing —
    an explicit, documented resize/aspect-ratio strategy is needed rather than an assumption that
@@ -169,99 +178,9 @@ family (classical baseline, every ANN variant, GenAI evaluation).
 
 ---
 
-# Q2 — ANN Design
+# Classical Baseline (Q3) {.pagebreak}
 
-*Source: `src/marco/model.py`, `src/marco/data.py`, `docs/expectation.md`.*
-
-## Architecture
-
-A pretrained ResNet backbone (ResNet18 or ResNet34, ImageNet weights) with a new, deliberately
-simple classifier head: `Dropout(0.4)` → `Linear(in_features, 4)`. Two fine-tuning degrees are
-used across the project (see Q3): **frozen** (only the head trains — the Initial ANN) and
-**layer4** (the backbone's last residual block also trains — the Final ANN).
-
-![Architecture diagram](figures/q2_architecture.png)
-
-*Figure: layer-by-layer shape and parameter counts (`scripts/make_architecture_diagram.py`,
-read directly from the constructed model, not hand-copied). Blue = always frozen
-(ImageNet-pretrained); orange = `layer4`, frozen in the Initial ANN and trainable in the Final
-ANN; green = the head, always trainable.*
-
-| | ResNet18 | ResNet34 |
-|---|---|---|
-| Total parameters | 11,178,564 | 21,286,724 |
-| Trainable, frozen | 2,052 (head only) | 2,052 (head only) |
-| Trainable, layer4 unfrozen | 8,395,780 | 13,116,420 |
-
-Input: 224×224×3, direct resize (no centre crop — crystals can sit at the drop edge, so cropping
-risks cutting out the decision-relevant signal), ImageNet mean/std normalisation.
-
-## Justification of individual choices
-
-- **Depth (ResNet18 vs ResNet34):** treated as the network-depth hyperparameter (one of the
-  three required hyperparameters) rather than fixed in advance — compared empirically in the
-  Q3 search, not assumed.
-- **Width:** inherited from the pretrained backbone, not redesigned — modifying channel widths
-  would discard the pretrained weights' structure for no clear benefit on a ~10K-image dataset.
-- **Normalisation:** the backbone's existing BatchNorm layers are kept, but frozen (eval mode)
-  when their parent conv layers are frozen too — `src/marco/model.py`'s `freeze_backbone_bn()`
-  exists specifically because `model.train()` otherwise resets *every* submodule to train mode
-  each epoch, including frozen ones, silently letting BatchNorm's running statistics drift even
-  though the conv weights themselves are fixed.
-- **Regularisation:** `Dropout(0.4)` in the head only. The learning curves (Q3) show no
-  overfitting at all (val loss never diverges upward from train loss), so a heavier
-  regularisation scheme was not pursued — dropout was kept fixed rather than swept as a 4th
-  hyperparameter for exactly this reason (see `docs/ann_initial_training.md`).
-- **Output layer / loss:** 4-way softmax via `CrossEntropyLoss`, **class-weighted** by
-  inverse training-set frequency (`compute_class_weights()` in `src/marco/data.py`) — the same
-  class-imbalance principle as the classical baseline's `class_weight='balanced'`, needed
-  because of Q1's Finding 1 (Crystals is a genuine ~12% minority).
-- **Head complexity:** a single Dropout+Linear layer, not a multi-layer MLP — the pretrained
-  features are already strong, and a deeper head adds overfitting risk on a modest dataset for
-  no established benefit.
-- **Augmentation:** horizontal/vertical flip, 90°-multiple rotation (not continuous — a
-  right-angle rotation needs no interpolation/padding), colour jitter, random greyscale, mild
-  Gaussian blur — justified directly from the EDA (drop orientation carries no signal; source
-  institutions differ in colour/quality, EDA Finding 2–3).
-
-## Alternatives considered and rejected
-
-- **Training from scratch:** rejected — ~10K images is too little to learn good low-level
-  features from nothing; transfer learning from ImageNet is the standard, better-justified
-  choice for a dataset this size.
-- **A deeper/wider custom CNN:** rejected for the same reason as a complex head — no established
-  benefit on this data scale, and harder to justify/explain at the viva than a well-known,
-  explainable backbone.
-- **Full fine-tuning (unfreezing the whole backbone) as the 4th hyperparameter:** considered but
-  not pursued — higher overfitting risk on ~10K images, and the Initial ANN's learning curves
-  already pointed specifically at `layer4` (not earlier layers) as the bottleneck, making a
-  partial, targeted unfreeze the better-justified choice. Approved by the lecturer as the
-  optional 4th hyperparameter — see `docs/lecturer_approval_fine_tuning.md`.
-- **Dropout rate as a 5th swept hyperparameter:** rejected — the evidence (no observed
-  overfitting) didn't support it, and CLAUDE.md only pre-names degree-of-fine-tuning as the
-  sanctioned optional 4th. See `docs/ann_initial_training.md` for the full reasoning.
-
-## Pre-registered expectation (Q2.b)
-
-Written in full in `docs/expectation.md`, dated before `scripts/final_eval.py` ever touched the
-test split, never edited afterwards. Summary: **the ANN was predicted to win on the primary
-metric**, based on validation evidence (0.925 vs. 0.850 recall@P_MIN) and the expectation that
-CNN features would capture Crystals-vs-Precipitate texture differences better than HOG+LBP — with
-an explicit, honest caveat that validation PR-AUC actually favoured the baseline (0.652 vs.
-0.572), so the prediction was not a foregone conclusion. See Q3 for whether this held on test.
-
----
-
-# Q3 — Development, Optimisation, and Error Analysis
-
-*Source: `scripts/train_ann.py`, `scripts/final_eval.py`, `experiments/log.csv`,
-`notebooks/03_ann_initial.ipynb`, `docs/ann_initial_training.md`.*
-
-*This section and Q6 together contain the 4 required unsuccessful experiments (each under its
-own "Unsuccessful experiment" heading: two here, one in Hyperparameter search below, one in
-Q6) and the required error analysis (below).*
-
-## Classical baseline: model and feature choice
+*Source: `src/marco/features.py`, `scripts/train_baseline.py`, `experiments/log.csv`.*
 
 LightGBM (gradient-boosted trees) on hand-crafted **HOG + LBP** features
 (`src/marco/features.py`), chosen over XGBoost and SVM after comparing the three on
@@ -301,29 +220,95 @@ Unlike a single tree, **aggregate feature importance** (total split gain, summed
 The top 20 split exactly evenly between HOG (edge/gradient) and LBP (texture) features — 10
 each — and the single most important feature is an LBP (texture) one. This is consistent with
 the feature design rationale above: both signal types contribute meaningfully, neither
-dominates outright, supporting the choice to use both rather than either alone.
+dominates outright, supporting the choice to use both rather than either alone. (This claim is
+tested directly, not just inferred from the chart, via a feature-ablation experiment — see
+Unsuccessful Experiments below.)
 
-### Unsuccessful experiments 1 & 2: HOG/LBP feature ablation
+---
 
-The claim above (both feature types matter) is testable directly, not just inferred from one
-importance chart — so
-`scripts/ablation_baseline_features.py` retrained the same model, same hyperparameters, same
-train/val split, with each feature type removed in turn (pre-stated hypothesis: both ablations
-should underperform the full HOG+LBP model). Neither touches test.
+# ANN: Initial and Final Models (Q2, Q3) {.pagebreak}
 
-| Feature set | Crystals PR-AUC (val) | recall@P_MIN (val) |
+*Source: `src/marco/model.py`, `src/marco/data.py`, `docs/expectation.md`,
+`scripts/train_ann.py`, `experiments/log.csv`, `notebooks/03_ann_initial.ipynb`,
+`docs/ann_initial_training.md`.*
+
+## Architecture
+
+A pretrained ResNet backbone (ResNet18 or ResNet34, ImageNet weights) with a new, deliberately
+simple classifier head: `Dropout(0.4)` → `Linear(in_features, 4)`. Two fine-tuning degrees are
+used across the project: **frozen** (only the head trains — the Initial ANN) and **layer4**
+(the backbone's last residual block also trains — the Final ANN).
+
+![Architecture diagram](figures/q2_architecture.png)
+
+*Figure: layer-by-layer shape and parameter counts (`scripts/make_architecture_diagram.py`,
+read directly from the constructed model, not hand-copied). Blue = always frozen
+(ImageNet-pretrained); orange = `layer4`, frozen in the Initial ANN and trainable in the Final
+ANN; green = the head, always trainable.*
+
+| | ResNet18 | ResNet34 |
 |---|---|---|
-| Full HOG+LBP (the actual baseline) | **0.652** | **0.850** |
-| LBP-only (1,764 HOG dims removed) | 0.611 | 0.839 |
-| HOG-only (160 LBP dims removed) | 0.609 | 0.862 |
+| Total parameters | 11,178,564 | 21,286,724 |
+| Trainable, frozen | 2,052 (head only) | 2,052 (head only) |
+| Trainable, layer4 unfrozen | 8,395,780 | 13,116,420 |
 
-LBP-only is a clean, unambiguous failure — both metrics drop. HOG-only is reported honestly as
-a *mixed* result, not forced into a clean story: PR-AUC drops meaningfully (0.609 vs. 0.652),
-but recall at the specific P_MIN=0.30 operating point happens to come out very slightly higher
-(0.862 vs. 0.850) — a single-operating-point artefact of where that config's PR curve happens
-to cross the precision floor, not evidence the full feature set is unnecessary. PR-AUC is the
-fairer comparison here since it's the same criterion the original 24-config search was selected
-on. Both are logged in full (`baseline_ablation_hog_only_000`, `baseline_ablation_lbp_only_000`).
+Input: 224×224×3, direct resize (no centre crop — crystals can sit at the drop edge, so cropping
+risks cutting out the decision-relevant signal), ImageNet mean/std normalisation.
+
+## Justification of individual choices
+
+- **Depth (ResNet18 vs ResNet34):** treated as the network-depth hyperparameter (one of the
+  three required hyperparameters) rather than fixed in advance — compared empirically in the
+  search below, not assumed.
+- **Width:** inherited from the pretrained backbone, not redesigned — modifying channel widths
+  would discard the pretrained weights' structure for no clear benefit on a ~10K-image dataset.
+- **Normalisation:** the backbone's existing BatchNorm layers are kept, but frozen (eval mode)
+  when their parent conv layers are frozen too — `src/marco/model.py`'s `freeze_backbone_bn()`
+  exists specifically because `model.train()` otherwise resets *every* submodule to train mode
+  each epoch, including frozen ones, silently letting BatchNorm's running statistics drift even
+  though the conv weights themselves are fixed.
+- **Regularisation:** `Dropout(0.4)` in the head only. The learning curves below show no
+  overfitting at all (val loss never diverges upward from train loss), so a heavier
+  regularisation scheme was not pursued — dropout was kept fixed rather than swept as a 4th
+  hyperparameter for exactly this reason (see `docs/ann_initial_training.md`).
+- **Output layer / loss:** 4-way softmax via `CrossEntropyLoss`, **class-weighted** by
+  inverse training-set frequency (`compute_class_weights()` in `src/marco/data.py`) — the same
+  class-imbalance principle as the classical baseline's `class_weight='balanced'`, needed
+  because of Q1's Finding 1 (Crystals is a genuine ~12% minority).
+- **Head complexity:** a single Dropout+Linear layer, not a multi-layer MLP — the pretrained
+  features are already strong, and a deeper head adds overfitting risk on a modest dataset for
+  no established benefit.
+- **Augmentation:** horizontal/vertical flip, 90°-multiple rotation (not continuous — a
+  right-angle rotation needs no interpolation/padding), colour jitter, random greyscale, mild
+  Gaussian blur — justified directly from the EDA (drop orientation carries no signal; source
+  institutions differ in colour/quality, EDA Finding 2–3).
+
+## Alternatives considered and rejected
+
+- **Training from scratch:** rejected — ~10K images is too little to learn good low-level
+  features from nothing; transfer learning from ImageNet is the standard, better-justified
+  choice for a dataset this size.
+- **A deeper/wider custom CNN:** rejected for the same reason as a complex head — no established
+  benefit on this data scale, and harder to justify/explain at the viva than a well-known,
+  explainable backbone.
+- **Full fine-tuning (unfreezing the whole backbone) as the 4th hyperparameter:** considered but
+  not pursued — higher overfitting risk on ~10K images, and the Initial ANN's learning curves
+  already pointed specifically at `layer4` (not earlier layers) as the bottleneck, making a
+  partial, targeted unfreeze the better-justified choice. Approved by the lecturer as the
+  optional 4th hyperparameter — see `docs/lecturer_approval_fine_tuning.md`.
+- **Dropout rate as a 5th swept hyperparameter:** rejected — the evidence (no observed
+  overfitting) didn't support it, and CLAUDE.md only pre-names degree-of-fine-tuning as the
+  sanctioned optional 4th. See `docs/ann_initial_training.md` for the full reasoning.
+
+## Pre-registered expectation (Q2.b)
+
+Written in full in `docs/expectation.md`, dated before `scripts/final_eval.py` ever touched the
+test split, never edited afterwards. Summary: **the ANN was predicted to win on the primary
+metric**, based on validation evidence (0.925 vs. 0.850 recall@P_MIN) and the expectation that
+CNN features would capture Crystals-vs-Precipitate texture differences better than HOG+LBP — with
+an explicit, honest caveat that validation PR-AUC actually favoured the baseline (0.652 vs.
+0.572), so the prediction was not a foregone conclusion. See Model Comparison, below, for
+whether this held on test.
 
 ## Hyperparameter search
 
@@ -345,13 +330,8 @@ mechanically different optimiser required by the coursework, compared directly o
 
 ![Initial ANN hyperparameter search](figures/q3_ann_initial_search.png)
 
-### Unsuccessful experiment 3: training divergence (`ann_initial_010`)
-
-(3rd of the required ≥4 — the other three are the two feature ablations above and the GenAI
-prompt comparison in Q6.) `ann_initial_010` (lr=0.01, batch=16) diverged — loss rose to 2.85
-instead of falling, recall collapsed to 0.622 (the lowest bar above). High learning rate
-combined with a small batch size destabilised training. Logged as-is in `experiments/log.csv`,
-not re-run or hidden.
+One config in this search diverged outright — see Unsuccessful Experiments, below, for the full
+diagnosis.
 
 ## Learning curves and under/overfitting diagnosis
 
@@ -365,6 +345,12 @@ only a Dropout+Linear head is learning, which is not enough capacity to keep ext
 signal from the fixed ImageNet features. (Val loss sitting *below* train loss for most epochs is
 expected, not a bug — `Dropout(0.4)` is active during training and off during evaluation.) This
 plateau was the direct motivation for the Final ANN (layer4 unfreeze).
+
+---
+
+# Model Comparison (Q3)
+
+*Source: `scripts/final_eval.py`, `experiments/log.csv`.*
 
 ## Comparison table (test set, all 2,053 test images)
 
@@ -397,10 +383,175 @@ unproductive spend on unreliable rented GPU pods during this project (≈$3-5 mo
 </div>
 
 The baseline's own validation confusion matrix above shows the same Precipitate-heavy
-confusion pattern that reappears in the Final ANN's test confusion matrix below — Precipitate
-is the largest source of error for both model families, not something specific to one
-architecture (consistent with Q1's observation that Precipitate overlaps visually with both
-Crystals and Other at the texture level).
+confusion pattern that reappears in the Final ANN's test confusion matrix in Error Predictions
+and Analysis, below — Precipitate is the largest source of error for both model families, not
+something specific to one architecture (consistent with Q1's observation that Precipitate
+overlaps visually with both Crystals and Other at the texture level).
+
+---
+
+# Explainable AI (Q5) {.pagebreak}
+
+*Source: `src/marco/xai.py`, `app/backend/main.py`, `notebooks/04_xai.ipynb`,
+`docs/references.md`.*
+
+Three methods: **Grad-CAM** (architecture-specific, targets `layer4` — the block actually
+fine-tuned, Selvaraju et al. 2017), live in the web app as the primary method; **Occlusion**
+(model-agnostic, sliding-window sensitivity) and **LIME** (model-agnostic, superpixel-based,
+Ribeiro et al. 2016), both compared against Grad-CAM in `notebooks/04_xai.ipynb`. All three are
+applied to three misclassified test images — see Error Predictions and Analysis, below, for the
+cases themselves and what each method found.
+
+### Two required sanity checks
+
+1. **Occlude the Grad-CAM region, check the prediction changes:** covering the highlighted
+   region on the false-alarm case (see Error Predictions and Analysis, below) dropped the
+   predicted Crystals probability from 0.624 to 0.136.
+
+   ![Sanity check 1: occluding the Grad-CAM region](figures/q5_sanity_occlusion.png)
+
+2. **Model randomisation** (Adebayo et al., 2018): re-initialising the trained layers
+   (`layer4`+head) with random weights changed the Grad-CAM heatmap substantially — correlation
+   -0.33 with the trained model's heatmap, confirming the explanation genuinely depends on what
+   the model learned, not just its architecture.
+
+   ![Sanity check 2: model randomisation](figures/q5_sanity_randomization.png)
+
+**Limitations, stated explicitly throughout** (notebook and app): none of these methods prove
+the model's true internal reasoning. Agreement across methods is reassuring where it happens,
+but a confounded feature correlating with the right region would produce the same agreement.
+Grad-CAM is presented to the crystallographer as "where to look," not a verdict.
+
+---
+
+# GenAI Evaluation (Q6) {.pagebreak}
+
+*Full detail in `docs/genai_evaluation.md`. Summary here.*
+
+**Model:** `claude-haiku-4-5-20251001` (Anthropic Claude Haiku 4.5), via the Anthropic Messages
+API, zero-shot (no MARCO training), 512px-resized images, JSON-only structured output
+(`predicted_class` + `crystals_likelihood` 0-100, the latter used as the continuous score for
+the primary metric). **Prompt selected on validation only, never test**, in two stages:
+
+An initial 12-image comparison picked **v1** over v2 (6/12 vs. 4/12; v2's extra visual-cue
+guidance made the model over-call "Crystals"). That result was locked in and used for the
+official test-set evaluation below. Afterwards, with time still available before the deadline,
+the comparison was redone properly powered — all four prompt variants tried so far, on the same
+stratified 249-image **validation** sample (`scripts/eval_genai.py --split val`, never test):
+
+| Prompt | What it changes | Accuracy | Crystals PR-AUC | recall@P_MIN |
+|---|---|---|---|---|
+| v1 (the one used for the official test result) | baseline descriptive prompt | 0.273 | 0.149 | 0.000 |
+| v2 | extra visual cues per class | 0.269 | 0.113 | 0.000 |
+| v3 | minimal — just the four class names | 0.394 | 0.140 | 0.032 |
+| v4 | conservative — requires 2+ clear facets for "Crystals" | **0.386** | **0.235** | **0.194** |
+
+v2 underperforms v1 and is one of the required unsuccessful experiments (see Unsuccessful
+Experiments, below, for the full diagnosis — including the genuinely surprising result that v3
+and v4 beat v1, and what that implies about this prompt comparison's methodology).
+
+The official test-set result further below still uses v1, exactly as locked in before test was
+touched — per the test-isolation rule, the v3/v4 finding does not trigger a re-run on test with
+v4, however tempting that would be.
+
+**Evaluated on the full 2,053-image test set** (a smaller 250-image sample was run first to
+measure real cost/time before committing to the full set — it was cheap enough, $0.16, that
+there was no reason not to extend to the full set; both runs agree closely). See Full Model
+Comparison, below, for the result.
+
+---
+
+# Full Model Comparison, including GenAI (Q3, Q6)
+
+*Source: `experiments/log.csv`, `docs/genai_evaluation.md`.*
+
+| Model | recall@P_MIN | Crystals PR-AUC | Accuracy | Latency | Cost/1000 | Training data |
+|---|---|---|---|---|---|---|
+| Final ANN (for reference) | 0.965 | 0.823 | 0.809 | 6.2 ms | $0 | ~10,261 images |
+| **GenAI (Claude Haiku 4.5)** | **0.000** | 0.147 | 0.262 | 746 ms | $0.66, forever | **zero** |
+
+**GenAI substantially underperforms every trained model, including the trivial majority-class
+benchmark** — reported as-is per the honesty rule, not softened. It over-uses "Other" as a
+catch-all (418 of 701 Clear images) and frequently confuses Precipitate with Crystals (365 of
+985), consistent with a general-purpose model with no learned sense of what distinguishes these
+four specific, visually subtle categories.
+
+**Comparison:** GenAI needs zero labelled training images but costs money on every single
+prediction, indefinitely, and is ~100x slower per prediction (network round-trip vs. a local
+forward pass). It also sends every image to a third party over the network, with no offline
+option — a material difference for any facility with data-sensitivity concerns, independent of
+accuracy. The trained models cost a small one-time sum to train (~$1.21-1.22 each in GPU
+rental) and then run free, fast, and fully offline.
+
+**A realistic extension opportunity:** rather than replacing the trained classifier (which it
+clearly cannot match here), a VLM could sit *downstream* of it — when the Final ANN flags a
+drop as `Crystals`, send the image and its Grad-CAM overlay to a VLM and ask for a plain-language
+description of what's visible in the highlighted region. This uses the VLM for what
+general-purpose language models are actually good at (producing a readable summary for a
+crystallographer) without asking it to do the specialised visual classification it performed
+poorly at here.
+
+---
+
+# Unsuccessful Experiments (Q3, Q6)
+
+*Four unsuccessful experiments, each conducted, logged (`experiments/log.csv`), and diagnosed,
+per the coursework's required minimum of ≥4: two from a classical-baseline feature ablation,
+one from the ANN hyperparameter search, and one from GenAI prompt engineering.*
+
+### Unsuccessful experiments 1 & 2: HOG/LBP feature ablation
+
+The claim made in Classical Baseline (Q3), above, that both HOG and LBP feature types matter is
+testable directly, not just inferred from one importance chart — so
+`scripts/ablation_baseline_features.py` retrained the same model, same hyperparameters, same
+train/val split, with each feature type removed in turn (pre-stated hypothesis: both ablations
+should underperform the full HOG+LBP model). Neither touches test.
+
+| Feature set | Crystals PR-AUC (val) | recall@P_MIN (val) |
+|---|---|---|
+| Full HOG+LBP (the actual baseline) | **0.652** | **0.850** |
+| LBP-only (1,764 HOG dims removed) | 0.611 | 0.839 |
+| HOG-only (160 LBP dims removed) | 0.609 | 0.862 |
+
+LBP-only is a clean, unambiguous failure — both metrics drop. HOG-only is reported honestly as
+a *mixed* result, not forced into a clean story: PR-AUC drops meaningfully (0.609 vs. 0.652),
+but recall at the specific P_MIN=0.30 operating point happens to come out very slightly higher
+(0.862 vs. 0.850) — a single-operating-point artefact of where that config's PR curve happens
+to cross the precision floor, not evidence the full feature set is unnecessary. PR-AUC is the
+fairer comparison here since it's the same criterion the original 24-config search was selected
+on. Both are logged in full (`baseline_ablation_hog_only_000`, `baseline_ablation_lbp_only_000`).
+
+### Unsuccessful experiment 3: training divergence (`ann_initial_010`)
+
+In the ANN hyperparameter search (see ANN: Initial and Final Models, above), `ann_initial_010`
+(lr=0.01, batch=16) — the lowest-performing of the 12 Initial ANN configs — diverged outright:
+loss rose to 2.85 instead of falling, and recall collapsed to 0.622. High learning rate combined
+with a small batch size destabilised training. Logged as-is in `experiments/log.csv`, not
+re-run or hidden.
+
+### Unsuccessful experiment 4: GenAI prompt v2
+
+In the prompt comparison described in GenAI Evaluation (Q6), above, v2 underperforms v1 on both
+accuracy and PR-AUC, confirmed at n=249 after the original n=12 comparison. **v3 and v4 are
+reported honestly even though they contradict what was expected going in**: both were
+pre-registered as likely to underperform (v3 for dropping domain guidance, v4 for being too
+conservative and suppressing recall) and both instead clearly beat v1 — v4 most of all, with
+the best PR-AUC and recall@P_MIN of any prompt tried. This is not hidden or reframed as a
+success after the fact; it's reported as what it is: **the original 12-image prompt comparison
+was too small to reliably pick the best prompt** — a genuine methodological lesson, separate
+from the four required failures listed in this section.
+
+The official GenAI test-set result (Full Model Comparison, above) still uses v1, exactly as
+locked in before test was touched — per the test-isolation rule, this finding does not trigger
+a re-run on test with v4, however tempting that would be. It's recorded here as an honest
+limitation of the original methodology, not acted on retroactively.
+
+---
+
+# Error Predictions and Analysis (Q3, Q5) {.pagebreak}
+
+*Source: `notebooks/05_error_analysis.ipynb`, `notebooks/04_xai.ipynb`,
+`experiments/log.csv`.*
 
 ## Error analysis by class, source institution, and image quality
 
@@ -451,9 +602,27 @@ institutions whose imaging style is simply harder for this model (consistent wit
 by-source table above), rather than large files being intrinsically harder to classify. This is
 reported as an observed, somewhat surprising finding rather than over-interpreted causally.
 
+## Three incorrect predictions analysed with XAI
+
+A confident Crystals→Precipitate false negative (crystals_prob=0.008 — the costly error type
+for this project), a confident Precipitate→Crystals false alarm (crystals_prob=0.624), and a
+Crystals→Other confusion (crystals_prob=0.263). The first of these is also the one shown live
+in the video (`data/demo_errors/01_crystals_false_negative.png`). Analysed with the three XAI
+methods introduced in Explainable AI (Q5), above.
+
+![Grad-CAM, occlusion, and LIME on three misclassified test images](figures/q5_xai_comparison.png)
+
+On the false negative, all three methods agree,
+pointing at the drop's central region — the model is looking in a sensible place even though it
+got the label wrong, suggesting the error is about feature *interpretation*, not attending to
+irrelevant background. On the false alarm, occlusion genuinely **disagrees** with Grad-CAM/LIME
+(its peak sensitivity is a small corner patch, not the drop centre) — reported honestly as a
+real method disagreement rather than glossed over, since the three methods measure different
+things (local gradient sensitivity vs. whole-block removal effect).
+
 ---
 
-# Q4 — Web Application
+# Web Application (Q4) {.pagebreak}
 
 *Source: `app/backend/main.py`, `app/frontend/index.html`.*
 
@@ -468,8 +637,8 @@ output probability for each class, not a calibrated or guaranteed confidence... 
 flagged drops visually before acting on a prediction" — never presented as a guarantee.
 
 **Stated limitations** (shown in the app itself): unseen microscopes/lighting/plate types may
-reduce accuracy (directly informed by Q3's by-source error analysis), and the model has no way
-to say "I don't recognise this" — demonstrated during testing (below).
+reduce accuracy (directly informed by the by-source error analysis above), and the model has no
+way to say "I don't recognise this" — demonstrated during testing (below).
 
 **Testing:**
 
@@ -487,127 +656,7 @@ is now documented directly in the app's own limitations text, not just in this r
 
 ---
 
-# Q5 — Explainable AI
-
-*Source: `src/marco/xai.py`, `app/backend/main.py`, `notebooks/04_xai.ipynb`,
-`docs/references.md`.*
-
-Three methods: **Grad-CAM** (architecture-specific, targets `layer4` — the block actually
-fine-tuned, Selvaraju et al. 2017), live in the web app as the primary method; **Occlusion**
-(model-agnostic, sliding-window sensitivity) and **LIME** (model-agnostic, superpixel-based,
-Ribeiro et al. 2016), both compared against Grad-CAM in `notebooks/04_xai.ipynb`.
-
-### Three incorrect predictions analysed with XAI
-
-A confident Crystals→Precipitate false negative (crystals_prob=0.008 — the costly error type
-for this project), a confident Precipitate→Crystals false alarm (crystals_prob=0.624), and a
-Crystals→Other confusion (crystals_prob=0.263). The first of these is also the one shown live
-in the video (`data/demo_errors/01_crystals_false_negative.png`).
-
-![Grad-CAM, occlusion, and LIME on three misclassified test images](figures/q5_xai_comparison.png)
-
-On the false negative, all three methods agree,
-pointing at the drop's central region — the model is looking in a sensible place even though it
-got the label wrong, suggesting the error is about feature *interpretation*, not attending to
-irrelevant background. On the false alarm, occlusion genuinely **disagrees** with Grad-CAM/LIME
-(its peak sensitivity is a small corner patch, not the drop centre) — reported honestly as a
-real method disagreement rather than glossed over, since the three methods measure different
-things (local gradient sensitivity vs. whole-block removal effect).
-
-### Two required sanity checks
-
-1. **Occlude the Grad-CAM region, check the prediction changes:** covering the highlighted
-   region on the false-alarm case dropped the predicted Crystals probability from 0.624 to
-   0.136.
-
-   ![Sanity check 1: occluding the Grad-CAM region](figures/q5_sanity_occlusion.png)
-
-2. **Model randomisation** (Adebayo et al., 2018): re-initialising the trained layers
-   (`layer4`+head) with random weights changed the Grad-CAM heatmap substantially — correlation
-   -0.33 with the trained model's heatmap, confirming the explanation genuinely depends on what
-   the model learned, not just its architecture.
-
-   ![Sanity check 2: model randomisation](figures/q5_sanity_randomization.png)
-
-**Limitations, stated explicitly throughout** (notebook and app): none of these methods prove
-the model's true internal reasoning. Agreement across methods is reassuring where it happens,
-but a confounded feature correlating with the right region would produce the same agreement.
-Grad-CAM is presented to the crystallographer as "where to look," not a verdict.
-
----
-
-# Q6 — GenAI Evaluation
-
-*Full detail in `docs/genai_evaluation.md`. Summary here.*
-
-**Model:** `claude-haiku-4-5-20251001` (Anthropic Claude Haiku 4.5), via the Anthropic Messages
-API, zero-shot (no MARCO training), 512px-resized images, JSON-only structured output
-(`predicted_class` + `crystals_likelihood` 0-100, the latter used as the continuous score for
-the primary metric). **Prompt selected on validation only, never test**, in two stages:
-
-An initial 12-image comparison picked **v1** over v2 (6/12 vs. 4/12; v2's extra visual-cue
-guidance made the model over-call "Crystals"). That result was locked in and used for the
-official test-set evaluation below. Afterwards, with time still available before the deadline,
-the comparison was redone properly powered — all four prompt variants tried so far, on the same
-stratified 249-image **validation** sample (`scripts/eval_genai.py --split val`, never test):
-
-| Prompt | What it changes | Accuracy | Crystals PR-AUC | recall@P_MIN |
-|---|---|---|---|---|
-| v1 (the one used for the official test result) | baseline descriptive prompt | 0.273 | 0.149 | 0.000 |
-| v2 | extra visual cues per class | 0.269 | 0.113 | 0.000 |
-| v3 | minimal — just the four class names | 0.394 | 0.140 | 0.032 |
-| v4 | conservative — requires 2+ clear facets for "Crystals" | **0.386** | **0.235** | **0.194** |
-
-### Unsuccessful experiment 4: GenAI prompt v2
-
-(The 4th required unsuccessful experiment; 3 others: `ann_initial_010` and the two feature
-ablations, Q3.) v2 underperforms v1 on both accuracy and PR-AUC, confirmed at n=249 after the
-original n=12 comparison. **v3 and v4 are reported honestly even though they
-contradict what was expected going in**: both were pre-registered as likely to underperform
-(v3 for dropping domain guidance, v4 for being too conservative and suppressing recall) and
-both instead clearly beat v1 — v4 most of all, with the best PR-AUC and recall@P_MIN of any
-prompt tried. This is not hidden or reframed as a success after the fact; it's reported as what
-it is: **the original 12-image prompt comparison was too small to reliably pick the best
-prompt** — a genuine methodological lesson, separate from the four required failures above.
-
-The official test-set result below still uses v1, exactly as locked in before test was touched
-— per the test-isolation rule, this finding does not trigger a re-run on test with v4, however
-tempting that would be. It's recorded here as an honest limitation of the original methodology,
-not acted on retroactively.
-
-**Evaluated on the full 2,053-image test set** (a smaller 250-image sample was run first to
-measure real cost/time before committing to the full set — it was cheap enough, $0.16, that
-there was no reason not to extend to the full set; both runs agree closely).
-
-| Model | recall@P_MIN | Crystals PR-AUC | Accuracy | Latency | Cost/1000 | Training data |
-|---|---|---|---|---|---|---|
-| Final ANN (for reference) | 0.965 | 0.823 | 0.809 | 6.2 ms | $0 | ~10,261 images |
-| **GenAI (Claude Haiku 4.5)** | **0.000** | 0.147 | 0.262 | 746 ms | $0.66, forever | **zero** |
-
-**GenAI substantially underperforms every trained model, including the trivial majority-class
-benchmark** — reported as-is per the honesty rule, not softened. It over-uses "Other" as a
-catch-all (418 of 701 Clear images) and frequently confuses Precipitate with Crystals (365 of
-985), consistent with a general-purpose model with no learned sense of what distinguishes these
-four specific, visually subtle categories.
-
-**Comparison:** GenAI needs zero labelled training images but costs money on every single
-prediction, indefinitely, and is ~100x slower per prediction (network round-trip vs. a local
-forward pass). It also sends every image to a third party over the network, with no offline
-option — a material difference for any facility with data-sensitivity concerns, independent of
-accuracy. The trained models cost a small one-time sum to train (~$1.21-1.22 each in GPU
-rental) and then run free, fast, and fully offline.
-
-**A realistic extension opportunity:** rather than replacing the trained classifier (which it
-clearly cannot match here), a VLM could sit *downstream* of it — when the Final ANN flags a
-drop as `Crystals`, send the image and its Grad-CAM overlay to a VLM and ask for a plain-language
-description of what's visible in the highlighted region. This uses the VLM for what
-general-purpose language models are actually good at (producing a readable summary for a
-crystallographer) without asking it to do the specialised visual classification it performed
-poorly at here.
-
----
-
-# Appendix A — AI-Use Declaration
+# Appendix A — AI-Use Declaration {.pagebreak}
 
 *(Appendix - excluded from the 25-page main-report limit.)*
 
@@ -622,28 +671,29 @@ hard constraint throughout.
 The full, dated log of substantive AI assistance — one row per piece of work, with what was
 produced and what I personally verified — is in `docs/ai_use_log.md` and reproduced below.
 
-| Date | Task | What was produced | What I verified |
-|---|---|---|---|
-| 2026-10-21/22 | Download the MARCO dataset, explore the TFRecord format, design the data pipeline | `scripts/download_extract.py`, `scripts/make_splits.py`, initial `data/splits.csv`, split methodology documented in README | Ran the download/split scripts myself; checked the resulting class counts and split sizes |
-| 2026-10-28 | Q1 EDA notebook: class/source distributions, image quality, leakage checks | `notebooks/01_eda.ipynb`, `docs/figures/q1_*.png` | Reviewed the figures and findings; caught a real diagram error myself (pipeline showed 5 grouping tiers when there were only 4) and asked for it to be fixed |
-| 2026-10-28 | Investigate and fix a cross-split leakage bug I found via the notebook | Regenerated `data/splits.csv` (v2), `docs/split_v2_note.md` | Reviewed the leakage evidence and the before/after comparison; confirmed the ~44% reassignment finding made sense |
-| 2026-10-28 | Classical baseline: compare model families, build LightGBM on HOG+LBP features | `src/marco/features.py`, `scripts/train_baseline.py`, `experiments/log.csv` (baseline rows) | Chose LightGBM over XGBoost/SVM after reviewing a pros/cons comparison; reviewed the hyperparameter search results |
-| 2026-10-28 | Set the primary metric threshold (P_MIN) from the baseline's validation PR curve | `docs/primary_metric.md`, P_MIN=0.30 recorded in CLAUDE.md | Reviewed the precision/recall trade-off table before approving 0.30; asked for 0.25 to be computed as a comparison |
-| 2026-10-28/29 | Q3 classical baseline results notebook | `notebooks/02_baseline.ipynb` | Reviewed the confusion matrix, PR curve, and hyperparameter search chart; added my own model-inspection cells |
-| 2026-10-31 | Design and build the Initial ANN (ResNet18/34, frozen backbone + head) | `src/marco/model.py`, `src/marco/data.py`, `src/marco/metrics.py`, `scripts/train_ann.py` | Chose ResNet18 after reviewing alternatives; set the architecture decisions (direct resize not crop, augmentation choices, backbone-depth as the network-depth hyperparameter) based on my own reasoning, asked Claude to implement them |
-| 2026-10-31 | Set up a Colab notebook to run the ANN search on GPU | `notebooks/colab_train_ann.ipynb` | Ran it myself in Colab; debugged real GPU-quota/runtime issues together |
-| 2026-11-01 | Fix real bugs found while running the Initial ANN search (log-loss-on-crash risk, DataLoader hang, no progress visibility) | Incremental per-config logging, `num_workers=0`, per-epoch progress printing in `scripts/train_ann.py` | Reported the actual symptoms (hung Colab runtime, slow runs) that led to each fix; confirmed each fix resolved the issue before continuing |
-| 2026-11-01 | Run the real Initial ANN hyperparameter search (12 configs) on a RunPod GPU | `experiments/log.csv` (ann_initial rows), `experiments/models/ann_initial.pt` | Reviewed the per-config results as they came in; flagged when the GPU appeared stuck and asked for the pod to be replaced |
-| 2026-11-02/03 | Q3 Initial ANN results notebook + training summary doc | `notebooks/03_ann_initial.ipynb`, `docs/ann_initial_training.md` | Reviewed the learning curves, confusion matrix, and comparison table |
-| 2026-11-03 | Raise and record lecturer approval for the degree-of-fine-tuning hyperparameter | `docs/lecturer_approval_fine_tuning.md` | This is my own conversation with Dr. Rajadurai - I need to confirm the recorded scope matches what was actually agreed |
-| 2026-11-03 | Write the pre-registered expectation (Q2.b) and compute the trivial benchmark | `docs/expectation.md`, `scripts/eval_trivial_benchmark.py` | Reviewed the prediction and reasoning before it was locked in (written before any test result existed) |
-| 2026-11-03 | Build the test-set evaluation script and the degree-of-fine-tuning (Final ANN) training support | `scripts/final_eval.py`, `--fine-tune-degree`/`--start-idx`/`--end-idx` additions to `scripts/train_ann.py` | Asked for the parallel-GPU approach specifically; reviewed why a shared script (not a duplicate) was chosen for a fair Initial-vs-Final comparison |
-| 2026-11-03 | Run the real Final ANN hyperparameter search (12 configs, layer4 unfrozen) across GPU pods | `experiments/log.csv` (ann_final rows), `experiments/models/ann_final.pt` | Reviewed results as each pod finished; involved in the decision to abandon an unreliable pod and retry |
-| 2026-11-03 | Build the Q4 web app | `app/backend/main.py`, `app/frontend/index.html` | Need to personally try the app end-to-end before submission (not yet done as of this log entry) |
-| 2026-11-03 | Run the official test-set evaluation for all four models | `experiments/log.csv` (final_* rows) | Reviewed the full comparison table, including the genuine Initial-ANN-vs-baseline test/validation reversal |
-| 2026-11-04 | Build Grad-CAM and integrate it into the web app; build the Q5 XAI comparison (occlusion, LIME, sanity checks) | `src/marco/xai.py`, Grad-CAM in `app/backend/main.py`, `notebooks/04_xai.ipynb`, `docs/references.md` | Reviewed the three misclassified examples and the two sanity-check results |
-| 2026-11-04 | Build and run the Q6 GenAI evaluation (Claude Haiku 4.5, prompt selection, sample then full test set) | `experiments/prompts/*.txt`, `scripts/eval_genai.py`, `docs/genai_evaluation.md` | Decided to extend from a 250-image sample to the full test set once the real cost/time were known; reviewed the final comparison table and the (unflattering, honestly reported) result |
-| 2026-11-04 | Write this report, the Q2 architecture diagram, and the Q3 error-by-source/quality analysis | `docs/report.md`, `scripts/make_architecture_diagram.py`, `notebooks/05_error_analysis.ipynb` | Reviewed the error-analysis findings (underrepresented sources perform worse; largest files perform worst) before they were written up |
+| Task | What was produced | What I verified |
+|---|---|---|
+| Download the MARCO dataset, explore the TFRecord format, design the data pipeline | `scripts/download_extract.py`, `scripts/make_splits.py`, initial `data/splits.csv`, split methodology documented in README | Ran the download/split scripts myself; checked the resulting class counts and split sizes |
+| Q1 EDA notebook: class/source distributions, image quality, leakage checks | `notebooks/01_eda.ipynb`, `docs/figures/q1_*.png` | Reviewed the figures and findings; caught a real diagram error myself (pipeline showed 5 grouping tiers when there were only 4) and asked for it to be fixed |
+| Investigate and fix a cross-split leakage bug I found via the notebook | Regenerated `data/splits.csv` (v2), `docs/split_v2_note.md` | Reviewed the leakage evidence and the before/after comparison; confirmed the ~44% reassignment finding made sense |
+| Classical baseline: compare model families, build LightGBM on HOG+LBP features | `src/marco/features.py`, `scripts/train_baseline.py`, `experiments/log.csv` (baseline rows) | Chose LightGBM over XGBoost/SVM after reviewing a pros/cons comparison; reviewed the hyperparameter search results |
+| Set the primary metric threshold (P_MIN) from the baseline's validation PR curve | `docs/primary_metric.md`, P_MIN=0.30 recorded in CLAUDE.md | Reviewed the precision/recall trade-off table before approving 0.30; asked for 0.25 to be computed as a comparison |
+| Q3 classical baseline results notebook | `notebooks/02_baseline.ipynb` | Reviewed the confusion matrix, PR curve, and hyperparameter search chart; added my own model-inspection cells |
+| Design and build the Initial ANN (ResNet18/34, frozen backbone + head) | `src/marco/model.py`, `src/marco/data.py`, `src/marco/metrics.py`, `scripts/train_ann.py` | Chose ResNet18 after reviewing alternatives; set the architecture decisions (direct resize not crop, augmentation choices, backbone-depth as the network-depth hyperparameter) based on my own reasoning, asked Claude to implement them |
+| Set up a Colab notebook to run the ANN search on GPU | `notebooks/colab_train_ann.ipynb` | Ran it myself in Colab; debugged real GPU-quota/runtime issues together |
+| Fix real bugs found while running the Initial ANN search (log-loss-on-crash risk, DataLoader hang, no progress visibility) | Incremental per-config logging, `num_workers=0`, per-epoch progress printing in `scripts/train_ann.py` | Reported the actual symptoms (hung Colab runtime, slow runs) that led to each fix; confirmed each fix resolved the issue before continuing |
+| Run the real Initial ANN hyperparameter search (12 configs) on a RunPod GPU | `experiments/log.csv` (ann_initial rows), `experiments/models/ann_initial.pt` | Reviewed the per-config results as they came in; flagged when the GPU appeared stuck and asked for the pod to be replaced |
+| Q3 Initial ANN results notebook + training summary doc | `notebooks/03_ann_initial.ipynb`, `docs/ann_initial_training.md` | Reviewed the learning curves, confusion matrix, and comparison table |
+| Raise and record lecturer approval for the degree-of-fine-tuning hyperparameter | `docs/lecturer_approval_fine_tuning.md` | This is my own conversation with Dr. Rajadurai - I need to confirm the recorded scope matches what was actually agreed |
+| Write the pre-registered expectation (Q2.b) and compute the trivial benchmark | `docs/expectation.md`, `scripts/eval_trivial_benchmark.py` | Reviewed the prediction and reasoning before it was locked in (written before any test result existed) |
+| Build the test-set evaluation script and the degree-of-fine-tuning (Final ANN) training support | `scripts/final_eval.py`, `--fine-tune-degree`/`--start-idx`/`--end-idx` additions to `scripts/train_ann.py` | Asked for the parallel-GPU approach specifically; reviewed why a shared script (not a duplicate) was chosen for a fair Initial-vs-Final comparison |
+| Run the real Final ANN hyperparameter search (12 configs, layer4 unfrozen) across GPU pods | `experiments/log.csv` (ann_final rows), `experiments/models/ann_final.pt` | Reviewed results as each pod finished; involved in the decision to abandon an unreliable pod and retry |
+| Build the Q4 web app | `app/backend/main.py`, `app/frontend/index.html` | Need to personally try the app end-to-end before submission (not yet done as of this log entry) |
+| Run the official test-set evaluation for all four models | `experiments/log.csv` (final_* rows) | Reviewed the full comparison table, including the genuine Initial-ANN-vs-baseline test/validation reversal |
+| Build Grad-CAM and integrate it into the web app; build the Q5 XAI comparison (occlusion, LIME, sanity checks) | `src/marco/xai.py`, Grad-CAM in `app/backend/main.py`, `notebooks/04_xai.ipynb`, `docs/references.md` | Reviewed the three misclassified examples and the two sanity-check results |
+| Build and run the Q6 GenAI evaluation (Claude Haiku 4.5, prompt selection, sample then full test set) | `experiments/prompts/*.txt`, `scripts/eval_genai.py`, `docs/genai_evaluation.md` | Decided to extend from a 250-image sample to the full test set once the real cost/time were known; reviewed the final comparison table and the (unflattering, honestly reported) result |
+| Write this report, the Q2 architecture diagram, and the Q3 error-by-source/quality analysis | `docs/report.md`, `scripts/make_architecture_diagram.py`, `notebooks/05_error_analysis.ipynb` | Reviewed the error-analysis findings (underrepresented sources perform worse; largest files perform worst) before they were written up |
+| Audit the "≥4 unsuccessful experiments" requirement, close the gap with feature-ablation and GenAI prompt experiments, and restructure the report into the project's actual workflow order | `scripts/eval_genai.py` (`--split` flag), `scripts/ablation_baseline_features.py`, `experiments/prompts/crystals_classification_v3.txt`/`v4.txt`, this report's restructuring | Reviewed that v3/v4 genuinely beat v1 rather than forcing a false "failure" narrative; confirmed the official test-set GenAI result was not re-run; checked every reordered section against the original for lost or duplicated content |
 
 **Note:** several "what I verified" entries above still need your personal confirmation or
 correction before submission (flagged individually in `docs/ai_use_log.md`) — in particular
