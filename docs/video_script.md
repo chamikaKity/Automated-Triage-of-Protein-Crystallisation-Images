@@ -58,8 +58,8 @@ per-shard and pooled chi-square cells; `data/splits.csv` head.
 > shards matched the full dataset well.
 >
 > This told me that a sample made from several shards would represent the whole dataset, so I
-> used 15 shards, about 14,400 images, for this project. This is the script that does the actual
-> download and extraction — `scripts/download_extract.py`.
+> used 15 shards, about 14,400 images, for this project. This is the script that downloads these
+> 15 shards and extracts the images.
 
 ---
 
