@@ -452,7 +452,11 @@ cases themselves and what each method found.
    -0.33 with the trained model's heatmap, confirming the explanation genuinely depends on what
    the model learned, not just its architecture.
 
+   <div style="page-break-inside: avoid;">
+
    ![Sanity check 2: model randomisation](figures/q5_sanity_randomization.png)
+
+   </div>
 
 **Limitations, stated explicitly throughout** (notebook and app): none of these methods prove
 the model's true internal reasoning. Agreement across methods is reassuring where it happens,
