@@ -257,6 +257,10 @@ an explicit, honest caveat that validation PR-AUC actually favoured the baseline
 *Source: `scripts/train_ann.py`, `scripts/final_eval.py`, `experiments/log.csv`,
 `notebooks/03_ann_initial.ipynb`, `docs/ann_initial_training.md`.*
 
+*This section and Q6 together contain the 4 required unsuccessful experiments (each under its
+own "Unsuccessful experiment" heading: two here, one in Hyperparameter search below, one in
+Q6) and the required error analysis (below).*
+
 ## Classical baseline: model and feature choice
 
 LightGBM (gradient-boosted trees) on hand-crafted **HOG + LBP** features
@@ -299,6 +303,28 @@ each — and the single most important feature is an LBP (texture) one. This is 
 the feature design rationale above: both signal types contribute meaningfully, neither
 dominates outright, supporting the choice to use both rather than either alone.
 
+### Unsuccessful experiments 1 & 2: HOG/LBP feature ablation
+
+The claim above (both feature types matter) is testable directly, not just inferred from one
+importance chart — so
+`scripts/ablation_baseline_features.py` retrained the same model, same hyperparameters, same
+train/val split, with each feature type removed in turn (pre-stated hypothesis: both ablations
+should underperform the full HOG+LBP model). Neither touches test.
+
+| Feature set | Crystals PR-AUC (val) | recall@P_MIN (val) |
+|---|---|---|
+| Full HOG+LBP (the actual baseline) | **0.652** | **0.850** |
+| LBP-only (1,764 HOG dims removed) | 0.611 | 0.839 |
+| HOG-only (160 LBP dims removed) | 0.609 | 0.862 |
+
+LBP-only is a clean, unambiguous failure — both metrics drop. HOG-only is reported honestly as
+a *mixed* result, not forced into a clean story: PR-AUC drops meaningfully (0.609 vs. 0.652),
+but recall at the specific P_MIN=0.30 operating point happens to come out very slightly higher
+(0.862 vs. 0.850) — a single-operating-point artefact of where that config's PR curve happens
+to cross the precision floor, not evidence the full feature set is unnecessary. PR-AUC is the
+fairer comparison here since it's the same criterion the original 24-config search was selected
+on. Both are logged in full (`baseline_ablation_hog_only_000`, `baseline_ablation_lbp_only_000`).
+
 ## Hyperparameter search
 
 Random search (seeded, `numpy.random.default_rng(42)`), 12 configs for the Initial ANN (frozen)
@@ -319,10 +345,13 @@ mechanically different optimiser required by the coursework, compared directly o
 
 ![Initial ANN hyperparameter search](figures/q3_ann_initial_search.png)
 
-**A real failed experiment** (one of the required ≥4): `ann_initial_010` (lr=0.01, batch=16)
-diverged — loss rose to 2.85 instead of falling, recall collapsed to 0.622 (the lowest bar
-above). High learning rate combined with a small batch size destabilised training. Logged
-as-is in `experiments/log.csv`, not re-run or hidden.
+### Unsuccessful experiment 3: training divergence (`ann_initial_010`)
+
+(3rd of the required ≥4 — the other three are the two feature ablations above and the GenAI
+prompt comparison in Q6.) `ann_initial_010` (lr=0.01, batch=16) diverged — loss rose to 2.85
+instead of falling, recall collapsed to 0.622 (the lowest bar above). High learning rate
+combined with a small batch size destabilised training. Logged as-is in `experiments/log.csv`,
+not re-run or hidden.
 
 ## Learning curves and under/overfitting diagnosis
 
@@ -468,10 +497,12 @@ fine-tuned, Selvaraju et al. 2017), live in the web app as the primary method; *
 (model-agnostic, sliding-window sensitivity) and **LIME** (model-agnostic, superpixel-based,
 Ribeiro et al. 2016), both compared against Grad-CAM in `notebooks/04_xai.ipynb`.
 
-**Three incorrect test predictions analysed:**
-a confident Crystals→Precipitate false negative (crystals_prob=0.008 — the costly error type
+### Three incorrect predictions analysed with XAI
+
+A confident Crystals→Precipitate false negative (crystals_prob=0.008 — the costly error type
 for this project), a confident Precipitate→Crystals false alarm (crystals_prob=0.624), and a
-Crystals→Other confusion (crystals_prob=0.263).
+Crystals→Other confusion (crystals_prob=0.263). The first of these is also the one shown live
+in the video (`data/demo_errors/01_crystals_false_negative.png`).
 
 ![Grad-CAM, occlusion, and LIME on three misclassified test images](figures/q5_xai_comparison.png)
 
@@ -483,7 +514,7 @@ irrelevant background. On the false alarm, occlusion genuinely **disagrees** wit
 real method disagreement rather than glossed over, since the three methods measure different
 things (local gradient sensitivity vs. whole-block removal effect).
 
-**Two required sanity checks:**
+### Two required sanity checks
 
 1. **Occlude the Grad-CAM region, check the prediction changes:** covering the highlighted
    region on the false-alarm case dropped the predicted Crystals probability from 0.624 to
@@ -512,10 +543,37 @@ Grad-CAM is presented to the crystallographer as "where to look," not a verdict.
 **Model:** `claude-haiku-4-5-20251001` (Anthropic Claude Haiku 4.5), via the Anthropic Messages
 API, zero-shot (no MARCO training), 512px-resized images, JSON-only structured output
 (`predicted_class` + `crystals_likelihood` 0-100, the latter used as the continuous score for
-the primary metric). **Prompt selected on validation only** (12 images, never test): two
-variants compared, v1 scored 6/12 vs. v2's 4/12 (v2's extra guidance made the model over-call
-"Crystals"); v1 locked in before any test image was touched, both kept in
-`experiments/prompts/` as the record.
+the primary metric). **Prompt selected on validation only, never test**, in two stages:
+
+An initial 12-image comparison picked **v1** over v2 (6/12 vs. 4/12; v2's extra visual-cue
+guidance made the model over-call "Crystals"). That result was locked in and used for the
+official test-set evaluation below. Afterwards, with time still available before the deadline,
+the comparison was redone properly powered — all four prompt variants tried so far, on the same
+stratified 249-image **validation** sample (`scripts/eval_genai.py --split val`, never test):
+
+| Prompt | What it changes | Accuracy | Crystals PR-AUC | recall@P_MIN |
+|---|---|---|---|---|
+| v1 (the one used for the official test result) | baseline descriptive prompt | 0.273 | 0.149 | 0.000 |
+| v2 | extra visual cues per class | 0.269 | 0.113 | 0.000 |
+| v3 | minimal — just the four class names | 0.394 | 0.140 | 0.032 |
+| v4 | conservative — requires 2+ clear facets for "Crystals" | **0.386** | **0.235** | **0.194** |
+
+### Unsuccessful experiment 4: GenAI prompt v2
+
+(The 4th required unsuccessful experiment; 3 others: `ann_initial_010` and the two feature
+ablations, Q3.) v2 underperforms v1 on both accuracy and PR-AUC, confirmed at n=249 after the
+original n=12 comparison. **v3 and v4 are reported honestly even though they
+contradict what was expected going in**: both were pre-registered as likely to underperform
+(v3 for dropping domain guidance, v4 for being too conservative and suppressing recall) and
+both instead clearly beat v1 — v4 most of all, with the best PR-AUC and recall@P_MIN of any
+prompt tried. This is not hidden or reframed as a success after the fact; it's reported as what
+it is: **the original 12-image prompt comparison was too small to reliably pick the best
+prompt** — a genuine methodological lesson, separate from the four required failures above.
+
+The official test-set result below still uses v1, exactly as locked in before test was touched
+— per the test-isolation rule, this finding does not trigger a re-run on test with v4, however
+tempting that would be. It's recorded here as an honest limitation of the original methodology,
+not acted on retroactively.
 
 **Evaluated on the full 2,053-image test set** (a smaller 250-image sample was run first to
 measure real cost/time before committing to the full set — it was cheap enough, $0.16, that

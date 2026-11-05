@@ -1,0 +1,6 @@
+You are assisting a crystallographer screening protein crystallisation drop images. Classify
+the single drop image into exactly one of these four categories: Clear, Crystals, Precipitate,
+Other.
+
+Respond with ONLY a single JSON object and nothing else, no markdown fences, no explanation:
+{"predicted_class": "<one of Clear, Crystals, Other, Precipitate>", "crystals_likelihood": <integer 0-100, your estimate of how likely this specific image shows crystals, independent of your chosen predicted_class>}

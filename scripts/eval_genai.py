@@ -1,13 +1,12 @@
-"""Evaluate a pretrained vision-language model (Claude) on a sample of the TEST split.
+"""Evaluate a pretrained vision-language model (Claude) on a sample of a data split.
 
-Reads test images only to score the GenAI baseline - the prompt itself (experiments/prompts/
-crystals_classification_v1.txt) was selected using validation images only (see the comparison
-against v2, run separately and documented in docs/genai_evaluation.md), per CLAUDE.md's rule
-that prompt choices use train/validation only.
+--split defaults to "test" for the official Q6 evaluation. Prompt experiments (comparing
+prompt variants) must pass --split val instead - the test split is reserved for the one
+official evaluation per CLAUDE.md rule 2; prompt choices use train/validation only.
 
-Evaluates a stratified random sample (not the full ~2,053 test images) for cost and time -
-documented explicitly, not hidden. Logs cost, latency, and the primary metric alongside every
-other model in experiments/log.csv.
+Evaluates a stratified random sample (not the full split) for cost and time - documented
+explicitly, not hidden. Logs cost, latency, and the primary metric alongside every other model
+in experiments/log.csv.
 """
 
 import argparse
@@ -80,6 +79,10 @@ def parse_args() -> argparse.Namespace:
                          default=Path("experiments/prompts/crystals_classification_v1.txt"))
     parser.add_argument("--log-path", type=Path, default=Path("experiments/log.csv"))
     parser.add_argument("--results-out", type=Path, default=Path("experiments/genai_test_results.csv"))
+    parser.add_argument("--split", choices=["train", "val", "test"], default="test",
+                         help="Which split to read. Prompt experiments must use 'val', never "
+                              "'test' - the test split is reserved for the one official "
+                              "evaluation (CLAUDE.md rule 2).")
     parser.add_argument("--n-sample", type=int, default=N_SAMPLE)
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--id", type=str, default="genai_claude_haiku_000",
@@ -93,13 +96,14 @@ def main() -> None:
     prompt = args.prompt_path.read_text()
 
     splits = pd.read_csv(args.splits_path)
-    test_df = splits[splits["split"] == "test"]
-    # Stratified sample: roughly proportional to each class's share of the full test set.
-    frac = args.n_sample / len(test_df)
-    sample = test_df.groupby("label", group_keys=False).sample(
+    split_df = splits[splits["split"] == args.split]
+    # Stratified sample: roughly proportional to each class's share of the full split.
+    frac = args.n_sample / len(split_df)
+    sample = split_df.groupby("label", group_keys=False).sample(
         frac=frac, random_state=args.seed
     ).reset_index(drop=True)
-    print(f"test set: {len(test_df)} images total, sampled {len(sample)} (read ONLY here, per hard rule 2)")
+    print(f"{args.split} set: {len(split_df)} images total, sampled {len(sample)}"
+          + (" (read ONLY here, per hard rule 2)" if args.split == "test" else ""))
     print(sample["label"].value_counts())
 
     rows = []
@@ -145,8 +149,8 @@ def main() -> None:
     log_row = {
         "id": args.id,
         "date": date.today().isoformat(),
-        "model": f"GenAI ({MODEL}) - TEST sample n={len(rows)}",
-        "what_changed": f"prompt={args.prompt_path.name}, sample_frac={frac:.3f}",
+        "model": f"GenAI ({MODEL}) - {args.split.upper()} sample n={len(rows)}",
+        "what_changed": f"prompt={args.prompt_path.name}, split={args.split}, sample_frac={frac:.3f}",
         "hyperparameters": json.dumps({"model": MODEL, "prompt": args.prompt_path.name}),
         "seed": args.seed,
         "validation_metrics": json.dumps({
@@ -159,7 +163,7 @@ def main() -> None:
             "inference_latency_ms_per_image": round(avg_latency_ms, 1),
             "n_images": len(rows),
         }),
-        "notes": "TEST SET sample result - scripts/eval_genai.py",
+        "notes": f"{args.split.upper()} set sample result - scripts/eval_genai.py",
     }
     pd.DataFrame([log_row]).to_csv(args.log_path, mode="a", header=False, index=False)
     print(f"\nlogged to {args.log_path}, raw results saved to {args.results_out}")

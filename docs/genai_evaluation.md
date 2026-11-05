@@ -19,8 +19,8 @@ listed rate, verified against https://platform.claude.com/docs/en/about-claude/p
 
 ## Prompt selection (validation only, per the rule)
 
-Two prompt variants were compared on 12 **validation** images (3 per class, seed=42), never
-test:
+**Stage 1 (used to pick the official prompt).** Two prompt variants were compared on 12
+**validation** images (3 per class, seed=42), never test:
 
 | Prompt | Validation accuracy |
 |---|---|
@@ -29,8 +29,41 @@ test:
 
 v2's extra guidance made the model over-call "Crystals" on images that weren't (several
 Precipitate validation images flipped to confident Crystals predictions). **v1 was selected**
-and locked in before any test image was touched. Both prompt files are kept in
-`experiments/prompts/` as the record of this comparison.
+and locked in before any test image was touched, and is what the official test-set result below
+uses.
+
+**Stage 2 (a properly-powered follow-up, also validation-only).** 12 images is a very small
+comparison - noisy enough that it's worth distrusting. With time still available,
+`scripts/eval_genai.py --split val --n-sample 250` was added (the existing script only read
+test; `--split` now lets prompt experiments stay on validation, never touching test) and all
+four prompt variants tried so far were compared on the same stratified 249-image validation
+sample:
+
+| Prompt | What it changes | Accuracy | Crystals PR-AUC | recall@P_MIN |
+|---|---|---|---|---|
+| v1 (official) | baseline descriptive prompt | 0.273 | 0.149 | 0.000 |
+| v2 | extra visual cues per class | 0.269 | 0.113 | 0.000 |
+| v3 | minimal - just the four class names, no descriptive cues | 0.394 | 0.140 | 0.032 |
+| v4 | conservative - requires 2+ clear facets before calling "Crystals" | **0.386** | **0.235** | **0.194** |
+
+Two new variants were written with explicit, pre-stated hypotheses before running them: v3 was
+expected to underperform v1 (hypothesis: stripping domain-specific visual guidance should hurt
+a general-purpose model on this niche task), and v4 was expected to underperform by being too
+conservative and suppressing Crystals recall. **Both hypotheses turned out to be wrong** - v3
+and v4 both clearly beat v1 on every metric except v3's marginally lower PR-AUC, with v4 the
+best prompt of any tried. This is reported as-is, not reframed as a win after the fact: it
+means the original 12-image comparison in Stage 1 was underpowered and likely did not identify
+the best available prompt - a genuine limitation of that earlier methodology.
+
+**v2 is logged and used as one of the coursework's required ≥4 unsuccessful experiments**
+(`genai_prompt_v2_val_000` in `experiments/log.csv`) - it underperforms v1 on both accuracy and
+PR-AUC, confirmed now at n=249 rather than the original n=12. v3 and v4 do not count as
+failures, since they succeeded; they're kept here as an honest secondary finding instead.
+
+**The official test-set result below was not changed.** Per the test-isolation rule, prompt
+choice is locked in before test is touched, and this follow-up finding - however tempting -
+does not justify re-running the test evaluation with v4. All four prompt files are kept in
+`experiments/prompts/` as the full record.
 
 ## Test-set evaluation
 
