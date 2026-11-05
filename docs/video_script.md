@@ -25,35 +25,33 @@ PYTHONPATH=src uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
 
 ---
 
-## 0:00–0:20 — Intro (0:20)
+## 0:00–0:35 — Intro (0:35)
 
 **Show:** face-cam or title slide with project name.
 
-> This is my MSc coursework project: triaging protein crystallisation drop images into Clear,
-> Crystals, Precipitate, or Other, using the MARCO dataset. The goal is to help a
-> crystallographer prioritise which drops to inspect for crystals worth harvesting — so missing
-> a real crystal is far more costly than a false alarm, and that asymmetry drives every modelling
+> Hi, I'm Chamika Subashinie. This is my MSc Data Science coursework project. I built a model
+> that sorts protein crystallisation drop images into four classes: Clear, Crystals, Precipitate
+> and Other, using the MARCO dataset.
+>
+> The aim is to help a crystallographer decide which drops to look at first. Only drops with
+> crystals are worth harvesting and sending to a synchrotron beamline, so for this user, missing
+> a real crystal is much more costly than a false alarm. That imbalance guided every modelling
 > decision I made.
 
 ---
 
-## 0:20–0:45 — Data download (0:25)
+## 0:35–0:50 — Data download (0:15)
 
 **Show:** terminal — `scripts/download_extract.py` and `data/splits.csv` head.
 
-> The data comes from MARCO — about 14,400 images across 15 shards, downloaded and extracted
-> from the original TFRecord format. I split it once into train/validation/test — 71/14/14% —
-> fixed in `data/splits.csv` for the whole project; the test set is only touched once, at the
-> end, by `final_eval.py`.
-
-> One thing I handled carefully: images of the same physical drop had to stay on one side of the
-> split, or a model could see a near-duplicate of a test image during training. I recovered
-> plate/well identity from filename conventions, and actually found and fixed a real leak this
-> way — 44% of images moved splits once I added a pattern I'd missed.
+> The data comes from MARCO — about 14,400 images across 15 shards, split once into
+> train/validation/test and fixed in `data/splits.csv`. I made sure images of the same physical
+> drop never span two splits — I actually found and fixed a real leak this way, where 44% of
+> images moved once I corrected it.
 
 ---
 
-## 0:45–1:30 — EDA (0:45)
+## 0:50–1:35 — EDA (0:45)
 
 **Show:** `01_eda.ipynb` — class distribution bar chart, then source-distribution chart.
 
@@ -74,7 +72,7 @@ PYTHONPATH=src uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
 
 ---
 
-## 1:30–2:10 — Classical baseline: LightGBM (0:40)
+## 1:35–2:15 — Classical baseline: LightGBM (0:40)
 
 **Show:** `02_baseline.ipynb` — confusion matrix and PR curve; optionally the feature-importance
 chart from `docs/figures/q3_baseline_feature_importance.png`.
@@ -93,7 +91,7 @@ chart from `docs/figures/q3_baseline_feature_importance.png`.
 
 ---
 
-## 2:10–3:15 — Initial ANN: 3 hyperparameters, and why RunPod not Colab (1:05)
+## 2:15–3:20 — Initial ANN: 3 hyperparameters, and why RunPod not Colab (1:05)
 
 **Show:** `03_ann_initial.ipynb` learning curves; terminal showing `train_ann.py --help` or the
 hyperparameter search bar chart.
@@ -123,7 +121,7 @@ hyperparameter search bar chart.
 
 ---
 
-## 3:15–4:25 — Final ANN: 4th hyperparameter, comparison table, error analysis (1:10)
+## 3:20–4:30 — Final ANN: 4th hyperparameter, comparison table, error analysis (1:10)
 
 **Show:** `docs/report.md`'s "Model Comparison (Q3)" section (or the PDF page).
 
@@ -157,7 +155,7 @@ hyperparameter search bar chart.
 
 ---
 
-## 4:25–6:05 — Live demo: web app, real-time prediction, Grad-CAM (1:40)
+## 4:30–6:10 — Live demo: web app, real-time prediction, Grad-CAM (1:40)
 
 **Show:** browser at `http://127.0.0.1:8000`. Upload a normal, correctly-classified test image
 first (e.g. a clear Crystals example).
@@ -188,7 +186,7 @@ first (e.g. a clear Crystals example).
 
 ---
 
-## 6:05–6:50 — A real incorrect prediction (0:45) — required
+## 6:10–6:55 — A real incorrect prediction (0:45) — required
 
 **Show:** upload `data/raw/Crystals/X0000045910743200502112353.png` — a true Crystals image the
 Final ANN confidently misclassifies.
@@ -209,7 +207,7 @@ Final ANN confidently misclassifies.
 
 ---
 
-## 6:50–7:30 — GenAI comparison (0:40)
+## 6:55–7:35 — GenAI comparison (0:40)
 
 **Show:** `docs/genai_evaluation.md` comparison table.
 
@@ -230,7 +228,7 @@ Final ANN confidently misclassifies.
 
 ---
 
-## 7:30–7:50 — Wrap-up (0:20)
+## 7:35–7:55 — Wrap-up (0:20)
 
 **Show:** face-cam or the comparison table again.
 
@@ -245,18 +243,18 @@ Final ANN confidently misclassifies.
 
 | Section | Duration | Running total |
 |---|---|---|
-| Intro | 0:20 | 0:20 |
-| Data download | 0:25 | 0:45 |
-| EDA | 0:45 | 1:30 |
-| Classical baseline | 0:40 | 2:10 |
-| Initial ANN + RunPod | 1:05 | 3:15 |
-| Final ANN + comparison + error analysis | 1:10 | 4:25 |
-| Live demo (prediction + Grad-CAM + sanity checks) | 1:40 | 6:05 |
-| Incorrect prediction (required) | 0:45 | 6:50 |
-| GenAI comparison | 0:40 | 7:30 |
-| Wrap-up | 0:20 | 7:50 |
+| Intro | 0:35 | 0:35 |
+| Data download | 0:15 | 0:50 |
+| EDA | 0:45 | 1:35 |
+| Classical baseline | 0:40 | 2:15 |
+| Initial ANN + RunPod | 1:05 | 3:20 |
+| Final ANN + comparison + error analysis | 1:10 | 4:30 |
+| Live demo (prediction + Grad-CAM + sanity checks) | 1:40 | 6:10 |
+| Incorrect prediction (required) | 0:45 | 6:55 |
+| GenAI comparison | 0:40 | 7:35 |
+| Wrap-up | 0:20 | 7:55 |
 
-Leaves ~10s buffer under the 8:00 cap. This now explicitly covers all four checklist items:
+Leaves ~5s buffer under the 8:00 cap. This now explicitly covers all four checklist items:
 error analysis (Final ANN section), request-time prediction (live demo), a sanity-checked XAI
 method (both required sanity checks named with their actual numbers), and an incorrect
 prediction analysed with XAI (required: 1 in video, 3 in the report's "Error Predictions and
