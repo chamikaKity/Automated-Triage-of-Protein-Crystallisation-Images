@@ -167,6 +167,14 @@ table (or the PDF pages).
 
 > Here's the full comparison on the held-out test set, each model run exactly once through
 > `final_eval.py`:
+
+| Model | recall@P_MIN (primary) | Crystals PR-AUC | Accuracy |
+|---|---|---|---|
+| Trivial benchmark (majority class) | 0.000 | 0.124 | 0.480 |
+| Classical baseline (LightGBM, HOG+LBP) | 0.937 | 0.678 | 0.812 |
+| Initial ANN (frozen) | 0.886 | 0.672 | 0.715 |
+| **Final ANN (layer4 unfrozen)** | **0.965** | **0.823** | 0.809 |
+
 >
 > - Trivial majority-class benchmark: 0.0 recall at the precision floor — obviously unusable, it
 >   exists to show accuracy alone is a bad metric: 48% accuracy, zero crystals ever caught.
