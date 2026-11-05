@@ -88,11 +88,6 @@ cell, then the class distribution / source distribution / image-size charts.
 > Exploring the data. I plotted the class distribution, the source institutions, and the image
 > sizes for each class. Image sizes vary widely, which is why every image is resized before
 > training.
->
-> Key finding. Only about 12 percent of images contain crystals, and missing one is worse than a
-> false alarm. So instead of accuracy, my main measure is how many real crystals the model
-> finds, while at least 3 in every 10 flagged drops really contain crystals. This 30 percent
-> level came from the baseline's validation results and is used for every model.
 
 ---
 
