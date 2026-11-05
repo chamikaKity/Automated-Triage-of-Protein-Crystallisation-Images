@@ -52,8 +52,12 @@ All statistics in this section use **train + val only** (12,314 images); the tes
 | Crystals | 1,522 | 12.4% |
 | Other | 704 | 5.7% |
 
-Crystals is a genuine minority class at ~12% — consistent with the ~13% figure reported for the
-published MARCO training set, confirming the 15-shard sample is representative.
+Crystals is a genuine minority class at ~12% — close to the published MARCO train-split figure
+of 12.8% across all 407 shards (415,775 images; `notebooks/00_download_explore.ipynb`). This was
+tested formally, not just eyeballed: a chi-square goodness-of-fit test of this sample's 4-class
+counts against the full population's proportions gives χ²=2.53, df=3, p=0.470 —
+nowhere near significant, so the sample's label distribution is statistically consistent with
+the full dataset (`notebooks/01_eda.ipynb`).
 
 **Source institution distribution:** five source institutions contribute images, very
 unevenly — source 3 alone accounts for 7,632 of 12,314 images (62%); sources 0 and 4
@@ -722,6 +726,7 @@ produced and what I personally verified — is in `docs/ai_use_log.md` and repro
 | Write this report, the Q2 architecture diagram, and the Q3 error-by-source/quality analysis | `docs/report.md`, `scripts/make_architecture_diagram.py`, `notebooks/05_error_analysis.ipynb` | Reviewed the error-analysis findings (underrepresented sources perform worse; largest files perform worst) before they were written up |
 | Audit the "≥4 unsuccessful experiments" requirement, close the gap with feature-ablation and GenAI prompt experiments, and restructure the report into the project's actual workflow order | `scripts/eval_genai.py` (`--split` flag), `scripts/ablation_baseline_features.py`, `experiments/prompts/crystals_classification_v3.txt`/`v4.txt`, this report's restructuring | Reviewed that v3/v4 genuinely beat v1 rather than forcing a false "failure" narrative; confirmed the official test-set GenAI result was not re-run; checked every reordered section against the original for lost or duplicated content |
 | Build `notebooks/06_ann_final.ipynb` (Final ANN analysis, mirroring `03_ann_initial.ipynb`'s structure) to close the asymmetry between the two ANN variants' documentation; add the Final ANN's hyperparameter-search and learning-curve figures to the report | `notebooks/06_ann_final.ipynb`, `docs/figures/q3_ann_final_*.png`, updates to `docs/report.md` | Executed the notebook for real (not hand-written outputs) and checked every printed number against what was already in the report and `experiments/log.csv` before trusting it; caught and fixed a latent filter bug (model-name `startswith` also matched the official TEST-set row) in both this notebook and `03_ann_initial.ipynb` |
+| Add a full-dataset reference table to `00_download_explore.ipynb` and a chi-square goodness-of-fit test in `01_eda.ipynb` checking the 15-shard sample's class distribution against the full 407-shard population, replacing the previous eyeballed "~13%, consistent" comparison | `notebooks/00_download_explore.ipynb`, `notebooks/01_eda.ipynb`, updates to `docs/report.md` | Asked for a formal statistical test instead of an eyeballed comparison; executed both notebooks for real and read the actual chi-square statistic (2.53) and p-value (0.470) before writing the interpretation, rather than assuming the result in advance |
 
 **Note:** several "what I verified" entries above still need your personal confirmation or
 correction before submission (flagged individually in `docs/ai_use_log.md`) — in particular
