@@ -96,22 +96,26 @@ cell, then the class distribution / source distribution / image-size charts.
 
 ---
 
-## 1:35–2:15 — Classical baseline: LightGBM (0:40)
+## Classical baseline: LightGBM — TIMING NOT YET SET (content only, per instruction)
 
 **Show:** `02_baseline.ipynb` — confusion matrix and PR curve; optionally the feature-importance
 chart from `docs/figures/q3_baseline_feature_importance.png`.
 
-> Before any neural network, I built a classical baseline — LightGBM on hand-crafted HOG and LBP
-> features. I chose LightGBM over XGBoost and SVM after comparing training speed and multiclass
-> support — it trains fast enough on ten thousand images that I could give it a hyperparameter
-> search budget of the same order of magnitude as the ANN, which matters for a fair comparison.
-> HOG captures edge and gradient structure — crystal facets have sharp, consistent edges — and
-> LBP captures local texture, which is what actually separates Precipitate's grainy look from
-> Clear's smoothness. Together they're genuinely complementary: in the trained model, the top 20
-> most important features split exactly 10/10 between the two.
-
-> On the test set, this baseline alone reaches 0.937 recall at my precision floor — a strong,
-> fast result the ANN then has to actually beat, not just match.
+> Classical baseline. Before any neural network, I built a classical model to compare against.
+> Each image is turned into hand-crafted features: HOG, which describes edges and shapes, and
+> LBP, which describes texture. A LightGBM model then learns to classify those features. I chose
+> LightGBM over XGBoost and SVM because it trains quickly on almost 2,000 features and handles
+> class imbalance well. I used balanced class weights, so the rare Crystals class counts as much
+> as the others.
+>
+> Setting the precision rule. On the validation set, I plotted the baseline's precision–recall
+> curve for Crystals. From it I set my rule: at least 30 percent of the drops the model flags
+> must really contain crystals. That means out of every 10 flagged drops, at least 3 are real
+> crystal drops. I fixed this level before training any neural network and used it unchanged for
+> every model, so it can't favour any of them.
+>
+> Result. On the test set, the baseline found 93.7 percent of the crystal drops at this
+> precision. It trained in under 30 seconds, so it's a strong and fast model to beat.
 
 ---
 
