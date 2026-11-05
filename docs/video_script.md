@@ -114,33 +114,38 @@ chart from `docs/figures/q3_baseline_feature_importance.png`.
 
 ---
 
-## 2:15–3:20 — Initial ANN: 3 hyperparameters, and why RunPod not Colab (1:05)
+## Initial ANN — TIMING NOT YET SET (content only, per instruction)
 
-**Show:** `03_ann_initial.ipynb` learning curves; terminal showing `train_ann.py --help` or the
-hyperparameter search bar chart.
+**Show:** `03_ann_initial.ipynb` learning curves and the new failed-experiment figure
+(`q3_ann_initial_failure.png`); terminal showing `train_ann.py --help` or the hyperparameter
+search bar chart.
 
-> For the ANN I used a pretrained ResNet backbone — ImageNet weights — with the backbone frozen
-> and a new Dropout-plus-Linear head trained on top. I searched three required hyperparameters:
-> learning rate, batch size, and network depth — ResNet18 versus ResNet34 — twelve configs,
-> randomly sampled from a 24-point grid, each trained for 12 epochs.
-
-> Training this on a laptop CPU wasn't realistic, so I needed a GPU. I started on Google Colab's
-> free tier, but ran into GPU quota limits partway through a twelve-config search — it would
-> cut me off mid-run. I looked at upgrading to a paid Colab subscription, but worked out that
-> for the actual amount of GPU time I needed — a few hours total — renting a GPU pod on RunPod by
-> the hour was both cheaper and more predictable than paying for a subscription, so I moved the
-> training there instead. The code itself didn't change — `train_ann.py` runs the same either
-> way, it's purely an infrastructure choice.
-
-> The learning curves showed train and validation loss both drop in epoch one and then plateau,
-> with no divergence between them — so no overfitting, but also no further improvement: with the
-> backbone frozen, only about two thousand head parameters are actually learning, which isn't
-> enough capacity to keep extracting more signal. That plateau is exactly what motivated the
-> next step.
-
-> I also hit one real failed experiment here, logged as-is rather than hidden: a high learning
-> rate with a small batch size made training diverge — loss rose instead of falling, recall
-> collapsed to 0.62.
+> Initial ANN. For the neural network, I used a ResNet backbone pretrained on ImageNet. I kept
+> the backbone frozen and trained only a new head on top: a dropout layer and a final layer for
+> my four classes.
+>
+> Hyperparameter search. I searched the three required hyperparameters: learning rate, from
+> 0.0003 to 0.01; batch size, 16, 32 or 64; and network depth, ResNet18 or ResNet34. That's 24
+> possible combinations. I ran a random search of 12 configurations, each trained for 12 epochs.
+> Because each setting was drawn independently, one combination came up twice, so the search
+> covered 11 different combinations.
+>
+> Where it ran. Training on my laptop was too slow, so I needed a GPU. I started on Google
+> Colab's free tier, but it kept cutting me off partway through the search. A paid subscription
+> was an option, but I only needed a few hours of GPU time, so renting a GPU on RunPod by the
+> hour was cheaper and more reliable. The training code is exactly the same either way. Only the
+> machine changed.
+>
+> What the learning curves showed. Training and validation loss both dropped in the first
+> epoch, then flattened out, and stayed close together. So the model wasn't overfitting, but it
+> also stopped improving. With the backbone frozen, only about two thousand numbers in the head
+> can learn, and they sit on top of features that were never adapted to drop images. That
+> plateau is what led to my next step: the Final ANN.
+>
+> A failed experiment. One setting failed: the highest learning rate, 0.01, with the smallest
+> batch size, 16. Training became unstable. The loss went up instead of down, and crystal recall
+> dropped to 0.62. I kept it in my log rather than hiding it. It showed that this model needs a
+> smaller learning rate.
 
 ---
 
