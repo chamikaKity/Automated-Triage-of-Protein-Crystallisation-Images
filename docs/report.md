@@ -37,9 +37,13 @@ giving **14,367 images**. A fixed, one-time train/val/test split was then built
 All statistics in this section use **train + val only** (12,314 images); the test split
 (2,053 images) is read only by `scripts/final_eval.py`, per the project's test-isolation rule.
 
+<div style="page-break-inside: avoid;">
+
 **Class distribution:**
 
 ![Class distribution](figures/q1_class_distribution.png)
+
+</div>
 
 | Class | Count | % |
 |---|---|---|
@@ -57,9 +61,13 @@ contribute only 371 and 225 images respectively.
 
 ![Source distribution](figures/q1_source_distribution.png)
 
+<div style="page-break-inside: avoid;">
+
 **Class composition by source:**
 
 ![Class composition by source](figures/q1_class_composition_by_source.png)
+
+</div>
 
 | Source | Clear | Crystals | Other | Precipitate |
 |---|---|---|---|---|
@@ -328,23 +336,42 @@ as the classical baseline's 24-config search (CLAUDE.md's fair-comparison rule).
 Adam for all ANN configs; the classical baseline's gradient boosting (LightGBM) is the second,
 mechanically different optimiser required by the coursework, compared directly on the same task.
 
-![Initial ANN hyperparameter search](figures/q3_ann_initial_search.png)
+<div style="display:flex; flex-wrap:wrap; gap:4%; align-items:flex-start;">
+<div style="width:48%;"><img src="figures/q3_ann_initial_search.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Initial ANN (frozen) — 12-config search</p></div>
+<div style="width:48%;"><img src="figures/q3_ann_final_search.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Final ANN (layer4 unfrozen) — 12-config search</p></div>
+</div>
 
-One config in this search diverged outright — see Unsuccessful Experiments, below, for the full
-diagnosis.
+One config in the Initial ANN's search diverged outright — see Unsuccessful Experiments, below,
+for the full diagnosis. The Final ANN's search (right) has no such failure: every config trains
+stably, and its best (`ann_final_008`, resnet34, lr=0.001, batch=32, recall@P_MIN=0.965)
+clears every Initial ANN config by a wide margin — the visual gap between the two charts is the
+clearest single piece of evidence that unfreezing `layer4` was the right call.
 
 ## Learning curves and under/overfitting diagnosis
 
-![Initial ANN learning curves](figures/q3_ann_initial_learning_curves.png)
+<div style="display:flex; flex-wrap:wrap; gap:4%; align-items:flex-start;">
+<div style="width:48%;"><img src="figures/q3_ann_initial_learning_curves.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Initial ANN (frozen) — best config</p></div>
+<div style="width:48%;"><img src="figures/q3_ann_final_learning_curves.png" style="width:100%;"><p style="text-align:center; font-size:0.85em; margin-top:0.2em;">Final ANN (layer4 unfrozen) — best config</p></div>
+</div>
 
-Both train and val loss drop in epoch 1, then plateau — train loss sits around 0.99–1.01, val
-loss fluctuates 0.85–0.97 for the remaining 11 epochs, with neither curve trending away from the
-other. This rules out classic overfitting (val loss would climb while train loss kept falling)
-but also means the frozen head stops improving almost immediately: with the backbone frozen,
-only a Dropout+Linear head is learning, which is not enough capacity to keep extracting more
-signal from the fixed ImageNet features. (Val loss sitting *below* train loss for most epochs is
-expected, not a bug — `Dropout(0.4)` is active during training and off during evaluation.) This
-plateau was the direct motivation for the Final ANN (layer4 unfreeze).
+**Initial ANN (left):** both train and val loss drop in epoch 1, then plateau — train loss sits
+around 0.99–1.01, val loss fluctuates 0.85–0.97 for the remaining 11 epochs, with neither curve
+trending away from the other. This rules out classic overfitting (val loss would climb while
+train loss kept falling) but also means the frozen head stops improving almost immediately: with
+the backbone frozen, only a Dropout+Linear head is learning, which is not enough capacity to keep
+extracting more signal from the fixed ImageNet features. (Val loss sitting *below* train loss for
+most epochs is expected, not a bug — `Dropout(0.4)` is active during training and off during
+evaluation.) This plateau was the direct motivation for the Final ANN (layer4 unfreeze).
+
+**Final ANN (right):** unfreezing `layer4` visibly changes this picture — train loss keeps
+falling across all 12 epochs (0.89 → 0.46), never plateauing the way the Initial ANN's did,
+because there is now real additional capacity to keep learning from. Val loss is noisier and
+does not track train loss as closely (fluctuating 0.63–0.81 with no clear trend either way), and
+val Crystals PR-AUC climbs from 0.69 to the 0.75–0.79 range and then plateaus there rather than
+climbing further. This is a mild train/val gap, consistent with the extra capacity being used,
+but not runaway overfitting — val PR-AUC never collapses, and the test-set result (Model
+Comparison, below) confirms the improvement generalised rather than just fitting validation
+noise.
 
 ---
 

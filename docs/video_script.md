@@ -12,7 +12,7 @@ time hunting for files:**
 2. `notebooks/01_eda.ipynb` (rendered, scrolled to the class/source distribution charts)
 3. `notebooks/02_baseline.ipynb` (scrolled to the confusion matrix / PR curve)
 4. `notebooks/03_ann_initial.ipynb` (learning curves)
-5. `docs/report.md`'s Q3 comparison table (or the PDF, page showing it)
+5. `docs/report.md`'s "Model Comparison (Q3)" section (or the PDF, page showing it)
 6. Browser at `http://127.0.0.1:8000` (confirm the backend is running — see below)
 7. `notebooks/04_xai.ipynb` (Grad-CAM/occlusion/LIME comparison figure)
 8. `docs/genai_evaluation.md`'s comparison table
@@ -125,7 +125,7 @@ hyperparameter search bar chart.
 
 ## 3:15–4:25 — Final ANN: 4th hyperparameter, comparison table, error analysis (1:10)
 
-**Show:** `docs/report.md` Q3 comparison table (or the PDF page).
+**Show:** `docs/report.md`'s "Model Comparison (Q3)" section (or the PDF page).
 
 > With the lecturer's approval, I added a fourth hyperparameter: degree of fine-tuning — frozen
 > versus unfreezing the backbone's last block, `layer4`, alongside the head. That gives the
@@ -259,6 +259,7 @@ Final ANN confidently misclassifies.
 Leaves ~10s buffer under the 8:00 cap. This now explicitly covers all four checklist items:
 error analysis (Final ANN section), request-time prediction (live demo), a sanity-checked XAI
 method (both required sanity checks named with their actual numbers), and an incorrect
-prediction analysed with XAI (required: 1 in video, 3 in the report's Q5). If you run long in
+prediction analysed with XAI (required: 1 in video, 3 in the report's "Error Predictions and
+Analysis (Q3, Q5)" section). If you run long in
 practice, trim "Data download" or "Wrap-up" first — not the live demo, the incorrect prediction,
 or the sanity-check lines, since those are what the checklist is actually looking for.
