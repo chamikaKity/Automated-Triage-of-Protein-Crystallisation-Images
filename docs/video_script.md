@@ -155,18 +155,17 @@ search bar chart.
 and Final Models (Q2, Q3)" section first, then its "Model Comparison (Q3)" section for the
 table (or the PDF pages).
 
-> With the lecturer's approval, I added a fourth hyperparameter: degree of fine-tuning — frozen
-> versus unfreezing the backbone's last block, `layer4`, alongside the head. That gives the
-> model real capacity to adapt its highest-level features to crystallisation images specifically,
-> not just reuse ImageNet features as-is.
-
-> You can see the effect directly in these two charts — the Final ANN's 12-config search sits
-> uniformly higher than the Initial ANN's, and unlike the Initial ANN, its training loss keeps
-> falling across all 12 epochs instead of plateauing after the first, because there's now real
-> capacity left to learn from.
-
-> Here's the full comparison on the held-out test set, each model run exactly once through
-> `final_eval.py`:
+> Final ANN. The plateau told me the frozen backbone was the limit. So I added a fourth
+> hyperparameter: degree of fine-tuning. I compared keeping the backbone frozen with unfreezing
+> its last block, layer4, so the model could adapt its top-level features to crystallisation
+> images instead of reusing ImageNet features as they are.
+>
+> You can see the effect in these two charts. Across the same 12 configurations, the Final ANN
+> scores higher than the Initial ANN. And its training loss keeps falling across all 12 epochs
+> instead of flattening after the first, because it now has room to learn.
+>
+> Test results. Here is the final comparison on the held-out test set. Each model was tested
+> exactly once.
 
 | Model | recall@P_MIN (primary) | Crystals PR-AUC | Accuracy |
 |---|---|---|---|
@@ -175,19 +174,20 @@ table (or the PDF pages).
 | Initial ANN (frozen) | 0.886 | 0.672 | 0.715 |
 | **Final ANN (layer4 unfrozen)** | **0.965** | **0.823** | 0.809 |
 
+> The trivial benchmark always guesses the most common class. It gets 48 percent accuracy but
+> finds no crystals at all, which shows why accuracy alone is a poor measure here.
 >
-> - Trivial majority-class benchmark: 0.0 recall at the precision floor — obviously unusable, it
->   exists to show accuracy alone is a bad metric: 48% accuracy, zero crystals ever caught.
-> - Classical baseline: 0.937.
-> - Initial ANN, frozen: 0.886 — and interestingly, this one actually *loses* to the baseline on
->   test despite beating it clearly on validation. I report that honestly rather than smoothing
->   it over — it's a genuine validation/test reversal.
-> - Final ANN, layer4 unfrozen: **0.965** — the best result, and the gap held up on test, which
->   is good evidence the unfreeze produced a real improvement rather than overfitting to
->   validation through repeated model selection.
-
-> So my pre-registered expectation — that the ANN would win — was correct, but only once I
-> actually unfroze part of the backbone; the frozen version alone wasn't enough.
+> The classical baseline finds 93.7 percent of crystal drops.
+>
+> The frozen Initial ANN finds 88.6 percent. Interestingly, it beat the baseline on validation
+> but lost to it on test. I report that honestly.
+>
+> The Final ANN, with layer4 unfrozen, finds 96.5 percent: the best result. Its test score
+> matched its validation score, so the improvement is real, not just tuned to the validation
+> set.
+>
+> So my pre-registered expectation, that the ANN would win, was correct, but only after I
+> unfroze part of the backbone.
 
 > I also did a proper error analysis on the Final ANN's test errors, not just the aggregate
 > number. Breaking accuracy down by source institution shows real spread — 60 to 69% on the two
