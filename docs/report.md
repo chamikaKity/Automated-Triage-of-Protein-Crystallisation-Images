@@ -29,8 +29,14 @@ class — it is the trigger for harvesting a drop and sending it for beamline da
 The full published dataset is distributed as TFRecord shards (~55GB, ~463,000 images; see
 `scripts/download_extract.py` for the download/extract pipeline). For this coursework, 15 shards
 were pulled (evenly spaced across the full shard range to avoid any shard-level sampling bias),
-giving **14,367 images**. A fixed, one-time train/val/test split was then built
-(`scripts/make_splits.py`) and is never regenerated — see the Leakage checks section below.
+giving **14,367 images**. This wasn't an arbitrary choice of 15: an exploratory chi-square check
+on 3 individual shards (1, 100, 300; `notebooks/00_download_explore.ipynb`) found one shard
+(300) statistically inconsistent with the full population on its own (χ²=10.34, p=0.016, driven
+by Crystals being overrepresented there), confirming single shards are too noisy to trust
+individually — pooling all 3 resolved this (χ²=4.53, p=0.210, not significant), which is the
+direct motivation for pulling multiple shards for the working dataset rather than just one or
+two. A fixed, one-time train/val/test split was then built (`scripts/make_splits.py`) and is
+never regenerated — see the Leakage checks section below.
 
 ## Class and source distributions
 
@@ -727,6 +733,9 @@ produced and what I personally verified — is in `docs/ai_use_log.md` and repro
 | Audit the "≥4 unsuccessful experiments" requirement, close the gap with feature-ablation and GenAI prompt experiments, and restructure the report into the project's actual workflow order | `scripts/eval_genai.py` (`--split` flag), `scripts/ablation_baseline_features.py`, `experiments/prompts/crystals_classification_v3.txt`/`v4.txt`, this report's restructuring | Reviewed that v3/v4 genuinely beat v1 rather than forcing a false "failure" narrative; confirmed the official test-set GenAI result was not re-run; checked every reordered section against the original for lost or duplicated content |
 | Build `notebooks/06_ann_final.ipynb` (Final ANN analysis, mirroring `03_ann_initial.ipynb`'s structure) to close the asymmetry between the two ANN variants' documentation; add the Final ANN's hyperparameter-search and learning-curve figures to the report | `notebooks/06_ann_final.ipynb`, `docs/figures/q3_ann_final_*.png`, updates to `docs/report.md` | Executed the notebook for real (not hand-written outputs) and checked every printed number against what was already in the report and `experiments/log.csv` before trusting it; caught and fixed a latent filter bug (model-name `startswith` also matched the official TEST-set row) in both this notebook and `03_ann_initial.ipynb` |
 | Add a full-dataset reference table to `00_download_explore.ipynb` and a chi-square goodness-of-fit test in `01_eda.ipynb` checking the 15-shard sample's class distribution against the full 407-shard population, replacing the previous eyeballed "~13%, consistent" comparison | `notebooks/00_download_explore.ipynb`, `notebooks/01_eda.ipynb`, updates to `docs/report.md` | Asked for a formal statistical test instead of an eyeballed comparison; executed both notebooks for real and read the actual chi-square statistic (2.53) and p-value (0.470) before writing the interpretation, rather than assuming the result in advance |
+| Add per-shard chi-square tests (shards 1, 100, 300 vs. the full population) to `00_download_explore.ipynb` | `notebooks/00_download_explore.ipynb` | Asked for the 3-shard test specifically; the real result was mixed (shard 300 significant at p=0.016, shards 1/100 not) rather than a clean confirmation - reviewed and kept the honest, nuanced interpretation rather than only reporting the two shards that agreed |
+| Add a pooled (3-shard combined) chi-square test to `00_download_explore.ipynb`, correctly summing counts before testing rather than averaging p-values | `notebooks/00_download_explore.ipynb` | Asked specifically for the pooled test; confirmed the real result (chi2=4.528, p=0.210, not significant) before writing that it resolves shard 300's individual significance as noise, rather than assuming it would |
+| Add the 3-shard chi-square check (per-shard + pooled) to `docs/report.md` as the stated reason 15 shards were pulled, not just 1-2 | `docs/report.md` | Checked the numbers against the already-verified notebook output before adding them to the report; confirmed page count was unaffected |
 
 **Note:** several "what I verified" entries above still need your personal confirmation or
 correction before submission (flagged individually in `docs/ai_use_log.md`) — in particular
