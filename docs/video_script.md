@@ -58,10 +58,7 @@ per-shard and pooled chi-square cells; `data/splits.csv` head.
 > shards matched the full dataset well.
 >
 > This told me that a sample made from several shards would represent the whole dataset, so I
-> used 15 shards, about 14,400 images, for this project — split once into train/validation/test
-> and fixed in `data/splits.csv`. I also made sure images of the same physical drop never span
-> two splits — I actually found and fixed a real leak this way, where 44% of images moved once I
-> corrected it.
+> used 15 shards, about 14,400 images, for this project.
 
 ---
 
