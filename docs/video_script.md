@@ -211,10 +211,6 @@ in this section, not a separate one.
 
 **[Upload image, let it run, point at the result]**
 
-> It returns a score for all four classes and the predicted class — and I'm careful about how
-> this is worded: this is the model's raw softmax output, not a calibrated, guaranteed
-> confidence. It reflects patterns learned from training data, not proof of correctness.
-
 **[Point at the heatmap]**
 
 > Explanation feature. This heatmap is Grad-CAM. It shows which part of the image most
