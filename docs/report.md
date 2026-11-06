@@ -4,8 +4,7 @@
 
 *Github Link: https://github.com/chamikaKity/Automated-Triage-of-Protein-Crystallisation-Images*
 
-**COMScDS252P-001**
-
+**COMScDS252P-001**\
 **Chamika Subashinie**
 
 </div>
