@@ -242,17 +242,7 @@ required: at least one incorrect prediction shown live]**
 > Finally, I compared all of this against a pretrained vision-language model — Claude Haiku 4.5
 > — zero-shot, no training on MARCO at all, evaluated on the exact same test images with the
 > same metric. It did **worse than every trained model, and worse than the trivial
-> majority-class benchmark** — 0.0 recall at the precision floor, 26% accuracy. It tends to
-> over-use "Other" as a catch-all and confuses Precipitate with Crystals constantly. I'm
-> reporting that as-is, not softened — it's the honest result.
-
-> What it *does* offer that the trained models don't: zero labelled training data needed, and no
-> training cost — but a real per-prediction cost forever, about 66 cents per thousand images,
-> versus near-zero marginal cost once a trained model exists. And every image sent to it leaves
-> the building, over the network, to a third party — a real privacy consideration a facility
-> would have to weigh. A realistic use for it isn't replacing the classifier — it's sitting
-> downstream, turning a Grad-CAM-flagged result into a plain-language description for a
-> crystallographer glancing at the output.
+> majority-class benchmark**.
 
 ---
 
