@@ -262,9 +262,11 @@ tree per class per round) can be read directly as a sequence of threshold rules,
 equivalent single component of the ANN can offer.
 
 <div style="page-break-inside: avoid; text-align: center;">
-<img src="figures/q3_baseline_tree.png" style="width:62%;" alt="One tree from the LightGBM ensemble (Crystals class, first round)">
+<img src="figures/q3_baseline_tree.png" style="width:75%;" alt="One tree from the LightGBM ensemble (Crystals class, first round)">
 <p style="font-size:0.85em;">One tree from the LightGBM ensemble (Crystals class, first round)</p>
 </div>
+
+<div style="page-break-inside: avoid;">
 
 *Read honestly: this is one of 800 trees in the ensemble (200 boosting rounds × 4 classes —
 `clf.booster_.num_trees()` confirms this directly), not the model's full decision logic —
@@ -274,6 +276,8 @@ tree's actual thresholds aren't independently meaningful without mapping back to
 HOG/LBP bins. What it does show concretely is that gradient-boosted trees are inherently
 inspectable at this level — in clear contrast to the ANN, which needed Grad-CAM/occlusion/LIME
 (Q5) just to get an approximate, non-provable sense of what influenced one prediction.*
+
+</div>
 
 Unlike a single tree, **aggregate feature importance** (total split gain, summed across all
 800 trees — all 4 classes, not just Crystals) is representative of the whole ensemble, not one
