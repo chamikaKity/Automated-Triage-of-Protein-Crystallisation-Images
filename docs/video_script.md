@@ -199,10 +199,12 @@ table (or the PDF pages).
 
 ---
 
-## 4:30–6:10 — Live demo: web app, real-time prediction, Grad-CAM (1:40)
+## 4:30–6:10 — Live demo: web app, real-time prediction, Grad-CAM, incorrect prediction (1:40)
 
 **Show:** browser at `http://127.0.0.1:8000`. Upload a normal, correctly-classified test image
-first (e.g. a clear Crystals example).
+first (e.g. a clear Crystals example), then later in this section upload the false-negative
+image from `data/demo_errors/` (see below) — the required incorrect-prediction demo now lives
+in this section, not a separate one.
 
 > This is the web app — FastAPI backend, simple frontend. Every prediction here runs the actual
 > trained model fresh, right now, nothing is precomputed. I'll upload a crystal image.
@@ -213,41 +215,27 @@ first (e.g. a clear Crystals example).
 > this is worded: this is the model's raw softmax output, not a calibrated, guaranteed
 > confidence. It reflects patterns learned from training data, not proof of correctness.
 
-**[Point at the Grad-CAM overlay]**
+**[Point at the heatmap]**
 
-> And this is the explanation feature — Grad-CAM, highlighting the region the model's gradients
-> were most sensitive to for this prediction. I picked Grad-CAM as the primary method because
-> it's fast enough to run live in the app, unlike LIME or occlusion, which I only use for offline
-> comparison. It's presented to a crystallographer as "where to look," not a verdict — it doesn't
-> prove the model's true reasoning, just gives supporting evidence.
+> Explanation feature. This heatmap is Grad-CAM. It shows which part of the image most
+> influenced the prediction. I compared it with two other methods. Occlusion covers small
+> patches of the image one at a time and measures how much the prediction changes. LIME splits
+> the image into regions and tests which ones matter most. Grad-CAM is the only one fast enough
+> to run live, so it's the one in the app. The other two I used offline to check it. For a
+> crystallographer, Grad-CAM shows where to look. It doesn't prove how the model reasons.
+>
+> I checked that it's trustworthy in two ways. First, when I covered the highlighted area, the
+> model's Crystals score fell from 0.62 to 0.14, so that area really drives the prediction.
+> Second, when I reset the model's trained layers to random weights, the heatmap changed
+> completely. So it reflects what the model learned.
 
-> I didn't just trust that blindly — I ran two required sanity checks on it. First, occluding
-> the Grad-CAM region on a misclassified image dropped its Crystals probability from 0.624 down
-> to 0.136, confirming the highlighted area is actually driving the prediction, not just
-> correlated with it. Second, re-randomising the trained layers' weights changed the heatmap
-> completely — correlation of minus 0.33 with the original — which confirms the explanation
-> genuinely depends on what the model learned, not just the network's architecture.
+**[Upload the false-negative image — `data/demo_errors/01_crystals_false_negative.png` —
+required: at least one incorrect prediction shown live]**
 
----
-
-## 6:10–6:55 — A real incorrect prediction (0:45) — required
-
-**Show:** upload `data/demo_errors/01_crystals_false_negative.png` — a true Crystals image the
-Final ANN confidently misclassifies.
-
-> Now let me show a real failure — this is actually required in my brief, and it's important:
-> no model is perfect, and showing one honestly matters more than pretending it doesn't happen.
-> This image is a true Crystals drop, but the model predicts it with only 0.8% Crystals
-> probability — a confident false negative, which is exactly the costly error type for this
-> project, since a missed crystal could mean losing a hit from scarce protein.
-
-**[Point at Grad-CAM overlay on this image]**
-
-> Looking at the Grad-CAM for this one — in my offline comparison, Grad-CAM, occlusion and LIME
-> all agree and point at the same central region of the drop. So the model isn't looking in a
-> nonsensical place — it's looking at the right area and still getting the label wrong. That
-> tells me this is an error of *interpretation*, not attention — worth knowing, because it means
-> more data from this kind of drop would help more than architecture changes would.
+> A real mistake. This drop really contains crystals, but the model gives it only a 0.8 percent
+> chance of Crystals. That's the costly error: a missed crystal. All three methods point at the
+> centre of the drop, so the model is looking in the right place but reading the texture wrong.
+> More training examples like this would likely help more than changing the model.
 
 ---
 
