@@ -250,10 +250,13 @@ required: at least one incorrect prediction shown live]**
 
 **Show:** face-cam or the comparison table again.
 
-> So: a fixed, leakage-checked split, a classical baseline that's genuinely hard to beat, an ANN
-> that only wins once part of the backbone is unfrozen, a sanity-checked Grad-CAM explanation,
-> and a GenAI baseline that shows why domain-specific training still matters. Everything shown
-> today ran live, nothing precomputed. Thanks for watching.
+> To sum up: I built a fixed split that keeps images from the same well together, so there's no
+> leakage. A classical baseline set a high bar. The neural network beat it only after I
+> unfroze part of the backbone. Grad-CAM shows where the model looks, and I checked that it's
+> trustworthy. And a general AI model, with no training on this task, did far worse, which shows
+> why training on real crystallisation data still matters.
+>
+> The predictions in the app ran live, with nothing precomputed. Thank you for watching.
 
 ---
 
