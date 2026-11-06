@@ -125,11 +125,20 @@ size (~70% of the sample) but far from universal. See Finding 3 below.
 
 ## Leakage checks
 
+**Split method.** The actual train/val/test split is built with scikit-learn's
+`StratifiedGroupKFold` (`scripts/make_splits.py`), giving **71/14/14%** (train/val/test). *Group*
+means every image belonging to the same leakage-group (below) is forced onto one side of the
+split — no group is ever split across train/val/test. *Stratified* means each split keeps a
+similar class balance, rather than relying on chance. The result is saved to `data/splits.csv`
+with each image's ID, label, group key, and assigned split — every model in this project reads
+this one file, and the group-key column makes it possible to re-verify at any time that no
+group crosses a split.
+
 Images of the same physical drop (same plate/well, imaged on different days or under different
 microscopy modes) must stay entirely on one side of the split — otherwise a model could
 effectively see a near-copy of a test image during training. MARCO's metadata carries no
-explicit plate/well ID, so grouping keys were recovered from filename conventions, which differ
-by source institution:
+explicit plate/well ID, so grouping keys (the groups `StratifiedGroupKFold` above actually
+groups by) were recovered from filename conventions, which differ by source institution:
 
 1. **`plateID<N>...wellNum<N>`** filenames → grouped by (plate, well) directly. 7,632 images
    (source 3).
