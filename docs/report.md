@@ -735,6 +735,12 @@ the uploaded image** — nothing is precomputed or hard-coded (CLAUDE.md rule 10
 uploads an image, receives the predicted class, a per-class score bar chart, and a Grad-CAM
 heatmap overlay (Q5).
 
+<div style="page-break-inside: avoid; text-align: center;">
+<img src="figures/web_app.png" style="width:55%;" alt="The web app: upload, prediction, per-class scores, explanation text">
+<p style="font-size:0.85em;">The web app after a real request: uploaded image, predicted class, per-class
+scores, and the score/limitations text shown to the user.</p>
+</div>
+
 **Explaining the score:** the response includes explicit text that the score is "the model's
 output probability for each class, not a calibrated or guaranteed confidence... always inspect
 flagged drops visually before acting on a prediction" — never presented as a guarantee.
