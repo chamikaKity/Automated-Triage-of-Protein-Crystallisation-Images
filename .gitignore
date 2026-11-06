@@ -1,6 +1,6 @@
 data/raw/
 data/features_baseline/
-experiments/models/
+experiments/models/.ipynb_checkpoints/
 
 __pycache__/
 *.pyc
