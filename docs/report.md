@@ -63,6 +63,13 @@ direct motivation for pulling multiple shards for the working dataset rather tha
 two. A fixed, one-time train/val/test split was then built (`scripts/make_splits.py`) and is
 never regenerated — see the Leakage checks section below.
 
+![One example image per class](figures/q1_example_images_per_class.png)
+
+*What each class actually looks like, side by side (`notebooks/00_download_explore.ipynb`):
+`Clear` is an empty, uniform drop; `Crystals` shows distinct geometric facets; `Other` covers
+anything that doesn't fit the other three (here, a hazy/indistinct drop); `Precipitate` is
+cloudy, amorphous solid with no crystal structure.*
+
 ## Class and source distributions
 
 All statistics in this section use **train + val only** (12,314 images); the test split
