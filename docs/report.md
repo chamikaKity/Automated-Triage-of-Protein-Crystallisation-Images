@@ -1,7 +1,8 @@
 # MARCO Crystallisation Image Triage — Report
 
-*Individual MSc Data Science AI coursework. Code: this repository. Experiment log:
-`experiments/log.csv`. AI-use declaration: `docs/ai_use_log.md`.*
+*Individual MSc Data Science AI coursework. Code:
+https://github.com/chamikaKity/Automated-Triage-of-Protein-Crystallisation-Images. Experiment
+log: `experiments/log.csv`. AI-use declaration: `docs/ai_use_log.md`.*
 
 **Summary:** this project builds and compares three approaches to flagging protein
 crystallisation drops likely to contain crystals from microscope images in the MARCO dataset: a
