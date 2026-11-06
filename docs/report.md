@@ -3,6 +3,17 @@
 *Individual MSc Data Science AI coursework. Code: this repository. Experiment log:
 `experiments/log.csv`. AI-use declaration: `docs/ai_use_log.md`.*
 
+**Summary:** this project builds and compares three approaches to flagging protein
+crystallisation drops likely to contain crystals from microscope images in the MARCO dataset: a
+classical LightGBM baseline on hand-crafted HOG+LBP features, a fine-tuned ResNet convolutional
+network, and a zero-shot vision-language model (Claude Haiku 4.5). The primary metric — recall
+on `Crystals` at a fixed 30% precision floor — reflects a real cost asymmetry: a missed crystal
+can lose a hit from scarce protein, while a false alarm only costs a crystallographer a few
+minutes of inspection. The fine-tuned ResNet (with its last block, `layer4`, unfrozen) wins on
+the held-out test set — 0.965 recall at the precision floor — beating the classical baseline
+(0.937) and the zero-shot vision-language model (0.000) by a wide margin, with Grad-CAM running
+live in a web app for request-time explanations.
+
 **Report structure:** this report follows the project's actual workflow rather than a strict
 Q1→Q6 reading order. Every section is tagged with the brief question(s) it covers, and all six
 (Q1–Q6) are present:
