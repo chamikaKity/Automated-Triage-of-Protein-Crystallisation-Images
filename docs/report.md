@@ -261,7 +261,10 @@ ensemble (first boosting round, `Crystals` class — LightGBM's multiclass objec
 tree per class per round) can be read directly as a sequence of threshold rules, something no
 equivalent single component of the ANN can offer.
 
-![One tree from the LightGBM ensemble (Crystals class, first round)](figures/q3_baseline_tree.png)
+<div style="page-break-inside: avoid; text-align: center;">
+<img src="figures/q3_baseline_tree.png" style="width:62%;" alt="One tree from the LightGBM ensemble (Crystals class, first round)">
+<p style="font-size:0.85em;">One tree from the LightGBM ensemble (Crystals class, first round)</p>
+</div>
 
 *Read honestly: this is one of 800 trees in the ensemble (200 boosting rounds × 4 classes —
 `clf.booster_.num_trees()` confirms this directly), not the model's full decision logic —
