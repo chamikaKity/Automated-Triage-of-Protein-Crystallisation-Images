@@ -1,289 +1,194 @@
-# Video script — MARCO Crystallisation Triage (target: 7:45, hard cap 8:00)
+# Video transcript — MARCO Crystallisation Triage (verbatim, from the actual recordings)
 
-Shooting script for the coursework demo video. Each block has a target duration, what to have
-on screen, and narration to read/paraphrase in your own words — don't read it robotically, use
-it as talking points. Numbers below are pulled directly from `docs/report.md`,
-`experiments/log.csv` and `docs/genai_evaluation.md` — verified against those files, not
-invented for the video.
+This is no longer a pre-recording script — it's a **verbatim transcript** of the 9 raw clips
+actually recorded (`videos_raw/*.mov`), produced with local ASR (faster-whisper, `small` model,
+CPU). Timestamps are `[M:SS]` within each clip. This document exists so the real recorded
+content can be reviewed and trimmed deliberately in conversation, rather than cut automatically.
 
-**Before recording — have these open in tabs/windows ready to switch to, so there's no dead
-time hunting for files:**
-1. Terminal, repo root
-2. `notebooks/01_eda.ipynb` (rendered, scrolled to the class/source distribution charts)
-3. `notebooks/02_baseline.ipynb` (scrolled to the confusion matrix / PR curve)
-4. `notebooks/03_ann_initial.ipynb` and `notebooks/06_ann_final.ipynb` (learning curves for both)
-5. `docs/report.md`'s "ANN: Initial and Final Models (Q2, Q3)" section (the side-by-side search/learning-curve figures) and "Model Comparison (Q3)" section (the comparison table)
-6. Browser at `http://127.0.0.1:8000` (confirm the backend is running — see below)
-7. `notebooks/04_xai.ipynb` (Grad-CAM/occlusion/LIME comparison figure)
-8. `docs/genai_evaluation.md`'s comparison table
-9. The three ready-to-upload misclassified test images in `data/demo_errors/` — the false
-   negative (`01_crystals_false_negative.png`) is the one used live in the demo below
-
-**Start the backend before recording:**
-```
-PYTHONPATH=src uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
-```
+**ASR accuracy note:** language detection confidence was 0.99-1.00 (English) on every clip, so
+the transcription is generally reliable, but automated speech recognition still mishears
+domain-specific jargon and proper nouns. Known likely mishearings spotted on review (the
+transcript below is left as ASR produced it, not hand-corrected):
+- "MARCO" (the dataset) → transcribed as "Markov" / "Marko" throughout
+- "well" (as in plate well) → transcribed as "bell" in clips 2-3
+- "HOG" (the feature type) → transcribed as "HRG" in clip 4
+- "overfitting" → transcribed as "off-beat" in clip 5
+- "unfreezing" → transcribed as "entrees in" / "entrose" in clips 5-6
+- A few other small mishearings are left in place; none change the meaning seriously, but don't
+  trust exact wording in those spots.
 
 ---
 
-## 0:00–0:35 — Intro (0:35)
+## 1. Intro (0:53)
 
-**Show:** face-cam or title slide with project name.
-
-> Hi, I'm Chamika Subashinie. This is my MSc Data Science coursework project. I built a model
-> that sorts protein crystallisation drop images into four classes: Clear, Crystals, Precipitate
-> and Other, using the MARCO dataset.
->
-> The aim is to help a crystallographer decide which drops to look at first. Only drops with
-> crystals are worth harvesting and sending to a synchrotron beamline, so for this user, missing
-> a real crystal is much more costly than a false alarm. That imbalance guided every modelling
-> decision I made.
+> [0:00] Hi, I'm Chanika Subashini. [0:03] This is my MSc Data Science coursework project.
+> [0:08] I build a model that sorts protein crystallization drop [0:12] images into four
+> classes, clear, crystal, precipitate, [0:18] and other using the Markov data set. [0:22] The
+> A is to help a crystallographer [0:26] to decide which drops to look at first. [0:30] Only
+> drop-set crystals are worth harvesting [0:34] and sending to a synchrotron beam line. [0:37]
+> So for this user, missing a real crystal [0:42] is much more costly than a false alarm. [0:46]
+> That imbalance guided every modeling decision [0:50] here I made in this analysis.
 
 ---
 
-## 0:35–[TBD, ~1:40] — Data download (~1:05) — TIMING NOT YET ADJUSTED, see note at bottom
+## 2. Data download (1:32)
 
-**Show:** open `scripts/download_extract.py` in the editor; `notebooks/00_download_explore.ipynb`'s
-per-shard and pooled chi-square cells; `data/splits.csv` head.
-
-> The full MARCO dataset is large: about 463,000 images, around 55 gigabytes, stored as TFRecord
-> files split into shards. The training part alone has 407 shards of about 1,000 images each.
->
-> To understand the data, I first downloaded one shard and counted how many images were in each
-> of the four classes. Then I wanted to know: do all the shards have a similar class mix? So I
-> downloaded two more shards from different parts of the dataset and compared them.
->
-> The share of Crystals images was close in all three shards: 11.8, 13.2 and 14.8 percent. The
-> full dataset has 12.8 percent. One shard alone can be a little off, but together the three
-> shards matched the full dataset well.
->
-> This told me that a sample made from several shards would represent the whole dataset, so I
-> used 15 shards, about 14,400 images, for this project. This is the script that downloads these
-> 15 shards and extracts the images.
+> [0:01] The full macro dataset is large, about 463,000 images, around 55 gigabytes, stored as
+> TF [0:11] record files split into shards. [0:14] The training part alone has 407 shards of
+> about 1,000 images each. [0:22] To understand the data, I first downloaded one shard and
+> counted how many images were [0:29] in each of the four classes. Then I wanted to know, do all
+> the shards have a similar class mix? [0:36] So, I downloaded two more shards from different
+> parts of the dataset and compared them. [0:45] The share of crystal images was close in all
+> three shards 11.8, 13.2 and 14.8 percent. [0:54] The full dataset has 12.8 percent. One shard
+> alone can be a little off, [1:04] but together the three shards matched the full dataset well.
+> [1:10] This told me that a sample made from several shards would represent the whole dataset.
+> [1:17] So, I used 15 shards, about 14,400 images for this project. [1:25] This is the script
+> that downloads these 15 shards and extract the images.
 
 ---
 
-## EDA — TIMING NOT YET SET (content only, per instruction)
+## 3. EDA (2:30)
 
-**Show:** `01_eda.ipynb` — leakage-grouping cells, `scripts/make_splits.py`, the chi-square
-cell, then the class distribution / source distribution / image-size charts.
-
-> Next, the exploratory data analysis.
->
-> Leakage control. The same well is often photographed more than once, and a well can hold
-> several drops. If those images ended up in both training and testing, the test score would
-> look better than it really is. So I read the plate and well numbers from the filenames and
-> gave every image a group key. Images from the same plate and well share a key.
->
-> Splitting the data. I then split the data into training, validation and test sets, roughly 70,
-> 15 and 15 percent, using scikit-learn's StratifiedGroupKFold. "Group" means whole groups stay
-> together, so no well crosses a split. "Stratified" means each set keeps a similar class
-> balance. I saved the split as a CSV file with each image's ID, label, group key and split.
-> Every model uses this same file, and I can check at any time that no group crosses a split.
->
-> Is the sample representative? On the training and validation images, I ran a chi-square test
-> against the class counts of the full MARCO dataset. There was no significant difference, so my
-> sample reflects the population.
->
-> Exploring the data. I plotted the class distribution, the source institutions, and the image
-> sizes for each class. Image sizes vary widely, which is why every image is resized before
-> training.
+> [0:02] Next, the exploratory data analysis, leakage control. [0:09] The same bell is often
+> photographed more than once, and a bell can hold several drops. [0:17] If those images ended
+> up in both training and testing, the test score would look better [0:24] than it really is.
+> [0:26] So, I read the plate and bell numbers from the file names and gave every image a key
+> group key. [0:38] Images from the same plate and same well share a key. [0:43] Splitting the
+> data. [0:47] Then I split the data into training, validation and test sets. [0:53] Roughly 70,
+> 15 and 15 percent. [0:57] Using scikit-learn stratified group k-fold. [1:04] Group means whole
+> groups stay together. [1:09] So, now well crosses a split. [1:12] Stratified means each set
+> keeps a similar class balance. [1:19] I saved the split as a CSV file with each images ID,
+> label, group key and split. [1:30] Every model uses the same file and I can check at any time
+> that no group crosses the split. [1:39] Is the sample representative? [1:47] On the training
+> and validation images, I ran a chi-square test. [1:56] Against the class counts of the full
+> Markov dataset. [2:01] There was no significant difference. [2:04] So, my sample reflects the
+> population. [2:09] Exploring the data. [2:11] I plotted the class distributions, the source
+> institutions and the image sizes for each class. [2:21] Image sizes vary widely. [2:24] Which
+> is why every image is resized before training.
 
 ---
 
-## Classical baseline: LightGBM — TIMING NOT YET SET (content only, per instruction)
+## 4. Classical model (1:52)
 
-**Show:** `02_baseline.ipynb` — confusion matrix and PR curve; optionally the feature-importance
-chart from `docs/figures/q3_baseline_feature_importance.png`.
-
-> Classical baseline. Before any neural network, I built a classical model to compare against.
-> Each image is turned into hand-crafted features: HOG, which describes edges and shapes, and
-> LBP, which describes texture. A LightGBM model then learns to classify those features. I chose
-> LightGBM over XGBoost and SVM because it trains quickly on almost 2,000 features and handles
-> class imbalance well. I used balanced class weights, so the rare Crystals class counts as much
-> as the others.
->
-> Setting the precision rule. On the validation set, I plotted the baseline's precision–recall
-> curve for Crystals. From it I set my rule: at least 30 percent of the drops the model flags
-> must really contain crystals. That means out of every 10 flagged drops, at least 3 are real
-> crystal drops. I fixed this level before training any neural network and used it unchanged for
-> every model, so it can't favour any of them.
->
-> Result. On the test set, the baseline found 93.7 percent of the crystal drops at this
-> precision. It trained in under 30 seconds, so it's a strong and fast model to beat.
+> [0:00] Classical baseline. Before any neural network, I built a classical model to compare
+> [0:07] our guest. Each image is turned into handcrafted features, HRG which [0:17] describes
+> edges and shapes, and LBP which describes texture. A light GBM model [0:26] then learns to
+> classify those features. I chose light GBM over XGBoost and SVM [0:34] because it trains
+> quickly on almost 2,000 features and handles class in [0:42] balance well. I used balanced
+> class weights so the reactryster class counts as [0:49] much as the others. Set in the
+> precision role. On the validation set, I [0:59] plotted the baseline's precision recall curve
+> for crystals. From it, I set my rule [1:07] at least 30% of the drops the model flags must
+> really contain crystals. That [1:15] means out of every 10 flag drops at least 3 are real
+> crystal drops. I fixed this [1:24] level before training any neural network and used it
+> unchanged for [1:28] every model so it can't favor any of them. The result on the test set the
+> [1:38] baseline found 93.7% of the crystal drops at this precision. It trained under [1:47] 30
+> seconds so it's a strong and fast model to beat.
 
 ---
 
-## Initial ANN — TIMING NOT YET SET (content only, per instruction)
+## 5. Initial ANN (3:01)
 
-**Show:** `03_ann_initial.ipynb` learning curves and the new failed-experiment figure
-(`q3_ann_initial_failure.png`); terminal showing `train_ann.py --help` or the hyperparameter
-search bar chart.
-
-> Initial ANN. For the neural network, I used a ResNet backbone pretrained on ImageNet. I kept
-> the backbone frozen and trained only a new head on top: a dropout layer and a final layer for
-> my four classes.
->
-> Hyperparameter search. I searched the three required hyperparameters: learning rate, from
-> 0.0003 to 0.01; batch size, 16, 32 or 64; and network depth, ResNet18 or ResNet34. That's 24
-> possible combinations. I ran a random search of 12 configurations, each trained for 12 epochs.
-> Because each setting was drawn independently, one combination came up twice, so the search
-> covered 11 different combinations.
->
-> Where it ran. Training on my laptop was too slow, so I needed a GPU. I started on Google
-> Colab's free tier, but it kept cutting me off partway through the search. A paid subscription
-> was an option, but I only needed a few hours of GPU time, so renting a GPU on RunPod by the
-> hour was cheaper and more reliable. The training code is exactly the same either way. Only the
-> machine changed.
->
-> What the learning curves showed. Training and validation loss both dropped in the first
-> epoch, then flattened out, and stayed close together. So the model wasn't overfitting, but it
-> also stopped improving. With the backbone frozen, only about two thousand numbers in the head
-> can learn, and they sit on top of features that were never adapted to drop images. That
-> plateau is what led to my next step: the Final ANN.
->
-> A failed experiment. One setting failed: the highest learning rate, 0.01, with the smallest
-> batch size, 16. Training became unstable. The loss went up instead of down, and crystal recall
-> dropped to 0.62. I kept it in my log rather than hiding it. It showed that this model needs a
+> [0:00] Initial ANN [0:03] For the neural network, I used a ResNet backbone pertained on
+> ImageNet. [0:09] I kept the backbone frozen and trained only a new head on top. [0:15] A
+> dropout layer and a final layer for my four classes. [0:22] Hyperparameter search [0:26] I
+> searched the three required hyperparameters [0:30] Learning rate from 0.0003 to 0.01, batch
+> size 16, 32 or 64 and network depth ResNet 18 or ResNet 34. [0:45] That's 24 possible
+> combinations. [0:48] I ran a random search of 12 configurations, each trained 12 epochs.
+> [0:54] Because each setting was drawn independently, one combination came up twice. [1:01] So
+> the search covered 11 different combinations. [1:07] Where I trained? [1:09] Training on my
+> laptop was too slow. [1:13] So I needed a GPU. [1:15] I started on Google Collapse Free Tier.
+> [1:19] But it kept cutting me off part way through the search. [1:22] A paid subscription was
+> an option. [1:26] But I only needed a few hours of GPU time. [1:30] So renting a GPU on run pod
+> by the hour was cheaper and more reliable. [1:37] The training code is exactly the same either
+> way. [1:41] Only the machine changed. [1:44] What learning curve showed? [1:50] Training and
+> validation loss both dropped in the first epoch. [1:57] Then flattened out and stayed close
+> together. [2:03] So the model wasn't off-beat. [2:06] But it also stopped improving. [2:09]
+> With backbone pros and only about 2000 numbers in the head can learn. [2:15] And then sit on
+> top of features that were never adapted to drop images. [2:21] That plateau is what led to my
+> next step. [2:26] The final A&N. [2:28] A failed experiment. [2:32] One setting failed. [2:37]
+> The highest learning rate 0.01 with the smallest batch size 16. [2:43] Training became
+> unstable. [2:45] The loss went up instead of down. [2:48] And crystal recall dropped to 0.62.
+> [2:52] I kept it in my log rather than hiding it. [2:56] It showed that this model needs a
 > smaller learning rate.
 
 ---
 
-## 3:20–4:30 — Final ANN: 4th hyperparameter, comparison table, error analysis (1:10)
+## 6. Final ANN (2:16)
 
-**Show:** the side-by-side search/learning-curve figures in `docs/report.md`'s "ANN: Initial
-and Final Models (Q2, Q3)" section first, then its "Model Comparison (Q3)" section for the
-table (or the PDF pages).
-
-> Final ANN. The plateau told me the frozen backbone was the limit. So I added a fourth
-> hyperparameter: degree of fine-tuning. I compared keeping the backbone frozen with unfreezing
-> its last block, layer4, so the model could adapt its top-level features to crystallisation
-> images instead of reusing ImageNet features as they are.
->
-> You can see the effect in these two charts. Across the same 12 configurations, the Final ANN
-> scores higher than the Initial ANN. And its training loss keeps falling across all 12 epochs
-> instead of flattening after the first, because it now has room to learn.
->
-> Test results. Here is the final comparison on the held-out test set. Each model was tested
-> exactly once.
-
-| Model | recall@P_MIN (primary) | Crystals PR-AUC | Accuracy |
-|---|---|---|---|
-| Trivial benchmark (majority class) | 0.000 | 0.124 | 0.480 |
-| Classical baseline (LightGBM, HOG+LBP) | 0.937 | 0.678 | 0.812 |
-| Initial ANN (frozen) | 0.886 | 0.672 | 0.715 |
-| **Final ANN (layer4 unfrozen)** | **0.965** | **0.823** | 0.809 |
-
-> The trivial benchmark always guesses the most common class. It gets 48 percent accuracy but
-> finds no crystals at all, which shows why accuracy alone is a poor measure here.
->
-> The classical baseline finds 93.7 percent of crystal drops.
->
-> The frozen Initial ANN finds 88.6 percent. Interestingly, it beat the baseline on validation
-> but lost to it on test. I report that honestly.
->
-> The Final ANN, with layer4 unfrozen, finds 96.5 percent: the best result. Its test score
-> matched its validation score, so the improvement is real, not just tuned to the validation
-> set.
->
-> So my pre-registered expectation, that the ANN would win, was correct, but only after I
-> unfroze part of the backbone.
-
-> I also did a proper error analysis on the Final ANN's test errors, not just the aggregate
-> number. Breaking accuracy down by source institution shows real spread — 60 to 69% on the two
-> smallest, most underrepresented sources, versus up to 85% on the best-performing one — directly
-> confirming the EDA's source-imbalance finding on held-out data, not just a hypothesis. And
-> Precipitate is the single biggest source of confusion for every other class, on both the
-> baseline and the ANN — so that's a dataset-level pattern, not something specific to one
-> architecture.
+> [0:00] final ANNIN. The plateau told me the frozen backbone was the limit. So I added a fourth
+> [0:08] hyperparameter, degree of fine-tuning. I compared keeping the backbone frozen with
+> [0:16] entrees in its last block layer 4 so the model could adapt its top-level features
+> [0:23] to crystallization images instead of reusing image net features as they are. [0:31] You
+> can see the effect in those two charts across the same dual configurations. [0:38] The final
+> ANNIN scores higher than the initial ANNIN and its training loss keeps falling [0:47] across 12
+> epochs instead of flattening after the first because it now has room to learn. [0:56] Test
+> results. The trivial benchmark was always guesses the most common class. [1:08] It gets 48%
+> accuracy but finds no crystals at all which shows why accuracy alone is a poor measure [1:19]
+> here. The classical baseline finds 93.7% of crystal drops. The frozen initial ANN [1:31] finds
+> 88.6%. Interestingly it beats the baseline on validation but lost to it on the test. [1:42] The
+> final ANNIN with layer 4 and frozen finds 96.5%. The best result. [1:53] The test score matched
+> its validation score so the improvement is real, [2:00] not just tuned to the validation set.
+> So my pre-registered expectation that the ANN would [2:08] win was correct but only after I
+> entrose part of the backbone.
 
 ---
 
-## 4:30–6:10 — Live demo: web app, real-time prediction, Grad-CAM, incorrect prediction (1:40)
+## 7. XAI (2:56)
 
-**Show:** browser at `http://127.0.0.1:8000`. Upload a normal, correctly-classified test image
-first (e.g. a clear Crystals example), then later in this section upload the false-negative
-image from `data/demo_errors/` (see below) — the required incorrect-prediction demo now lives
-in this section, not a separate one.
-
-> This is the web app — FastAPI backend, simple frontend. Every prediction here runs the actual
-> trained model fresh, right now, nothing is precomputed. I'll upload a crystal image.
-
-**[Upload image, let it run, point at the result]**
-
-**[Point at the heatmap]**
-
-> Explanation feature. This heatmap is Grad-CAM. It shows which part of the image most
-> influenced the prediction. I compared it with two other methods. Occlusion covers small
-> patches of the image one at a time and measures how much the prediction changes. LIME splits
-> the image into regions and tests which ones matter most. Grad-CAM is the only one fast enough
-> to run live, so it's the one in the app. The other two I used offline to check it. For a
-> crystallographer, Grad-CAM shows where to look. It doesn't prove how the model reasons.
->
-> I checked that it's trustworthy in two ways. First, when I covered the highlighted area, the
-> model's Crystals score fell from 0.62 to 0.14, so that area really drives the prediction.
-> Second, when I reset the model's trained layers to random weights, the heatmap changed
-> completely. So it reflects what the model learned.
-
-**[Upload the false-negative image — `data/demo_errors/01_crystals_false_negative.png` —
-required: at least one incorrect prediction shown live]**
-
-> A real mistake. This drop really contains crystals, but the model gives it only a 0.8 percent
-> chance of Crystals. That's the costly error: a missed crystal. All three methods point at the
-> centre of the drop, so the model is looking in the right place but reading the texture wrong.
-> More training examples like this would likely help more than changing the model.
+> [0:00] This is the web app. Fast API backend, simple frontend. [0:06] Every prediction here
+> runs the actual trained model fresh right now and nothing is pre-computed. [0:16] Let's upload
+> a crystal image and get the predictions. [0:25] This heatmap is gradcam. It shows which part of
+> the image most influenced the prediction. [0:38] I compared it with two other methods. [0:42]
+> Occlusion covers small patches of the image one at a time and measures how much the prediction
+> changes. [0:54] Line split the images into regions and tests which one matters most. [1:02]
+> Gradcam is the only one fast enough to run live so it is the one in the app. [1:10] The other
+> two I used offline to check it. [1:14] For crystallographer, gradcam shows where to look. It
+> doesn't show how the model raises. [1:22] I checked that it is trustworthy in two ways. [1:32]
+> First, when I covered the highlighted area, the model's crystals fell from 0.62 to 0.14.
+> [1:44] So that area really drives the prediction. [1:50] Second, when I reset the model's
+> trained layers to random weights, the heatmap changed completely. [2:00] So it reflects what
+> the model learned. [2:04] Let's find a real mistake. [2:16] This drop really contains crystals
+> but the model gives it only a 0.8% chance of crystals. [2:34] That's the costly error. A missed
+> crystal. [2:40] All three methods points at the center of the drop. [2:49] So the model is
+> looking in the right place but reading the texture wrong.
 
 ---
 
-## 6:55–7:35 — GenAI comparison (0:40)
+## 8. GenAI (0:28)
 
-**Show:** `docs/genai_evaluation.md` comparison table.
-
-> Finally, I compared all of this against a pretrained vision-language model — Claude Haiku 4.5
-> — zero-shot, no training on MARCO at all, evaluated on the exact same test images with the
-> same metric. It did **worse than every trained model, and worse than the trivial
-> majority-class benchmark**.
+> [0:00] Finally, I compared all of this against a pre-trained vision language model Claude
+> Haiku 4.5, zero shot, [0:11] not training on Marko at all, evaluated on the exact same test
+> images with the same metric. [0:20] It did worse than every trained model and worse than the
+> trivial majority class benchmark.
 
 ---
 
-## 7:35–7:55 — Wrap-up (0:20)
+## 9. End (0:51)
 
-**Show:** face-cam or the comparison table again.
-
-> To sum up: I built a fixed split that keeps images from the same well together, so there's no
-> leakage. A classical baseline set a high bar. The neural network beat it only after I
-> unfroze part of the backbone. Grad-CAM shows where the model looks, and I checked that it's
-> trustworthy. And a general AI model, with no training on this task, did far worse, which shows
-> why training on real crystallisation data still matters.
->
-> The predictions in the app ran live, with nothing precomputed. Thank you for watching.
+> [0:00] To sum up, I built a fixed split that keep images from the same well together. [0:08] So
+> there's no leakage. [0:10] A classical baseline set a high bar. [0:14] The neural network beat
+> it only after I unfroze part of the backbone. [0:21] Gradcam shows where the model looks and I
+> check that it's trustworthy. [0:28] And a general AI model with no training on this task did
+> far worse, which shows why training [0:37] on real crystallization data still matters. [0:42]
+> The prediction in the app ran live with nothing pre-computed. [0:50] Thank you for watching.
 
 ---
 
-## Timing budget check
+## Running time vs. the 8:00 target
 
-**STALE — not yet updated for the longer Data download narration below.** Data download grew
-from ~15s to ~1:05 (147+ words). Everything from Data download onward in this table is wrong
-until the next retime pass; total is currently well over 8:00. Content correctness was
-prioritised first per instruction — do not record from these timestamps yet.
-
-| Section | Duration | Running total |
+| Clip | Duration | Running total |
 |---|---|---|
-| Intro | 0:35 | 0:35 |
-| Data download | ~1:05 (was 0:15) | ~1:40 (stale) |
-| EDA | 0:45 | 1:35 |
-| Classical baseline | 0:40 | 2:15 |
-| Initial ANN + RunPod | 1:05 | 3:20 |
-| Final ANN + comparison + error analysis | 1:10 | 4:30 |
-| Live demo (prediction + Grad-CAM + sanity checks) | 1:40 | 6:10 |
-| Incorrect prediction (required) | 0:45 | 6:55 |
-| GenAI comparison | 0:40 | 7:35 |
-| Wrap-up | 0:20 | 7:55 |
+| 1. Intro | 0:53 | 0:53 |
+| 2. Data download | 1:32 | 2:26 |
+| 3. EDA | 2:30 | 4:55 |
+| 4. Classical model | 1:52 | 6:48 |
+| 5. Initial ANN | 3:01 | 9:49 |
+| 6. Final ANN | 2:16 | 12:04 |
+| 7. XAI | 2:56 | 15:01 |
+| 8. GenAI | 0:28 | 15:29 |
+| 9. End | 0:51 | 16:20 |
 
-Leaves ~5s buffer under the 8:00 cap. This now explicitly covers all four checklist items:
-error analysis (Final ANN section), request-time prediction (live demo), a sanity-checked XAI
-method (both required sanity checks named with their actual numbers), and an incorrect
-prediction analysed with XAI (required: 1 in video, 3 in the report's "Error Predictions and
-Analysis (Q3, Q5)" section). If you run long in
-practice, trim "Data download" or "Wrap-up" first — not the live demo, the incorrect prediction,
-or the sanity-check lines, since those are what the checklist is actually looking for.
+**Total raw runtime: 16:20 (979.8s). Target: 8:00 (480s). Gap: ~8:20 needs to come out.**
+
+No cutting decisions are made in this document - this is the record of what was actually said,
+for review before deciding together what to trim.
