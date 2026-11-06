@@ -741,6 +741,8 @@ heatmap overlay (Q5).
 scores, the Grad-CAM heatmap (Q5), and the score/limitations text shown to the user.</p>
 </div>
 
+<div style="page-break-before: always;">
+
 **Explaining the score:** the response includes explicit text that the score is "the model's
 output probability for each class, not a calibrated or guaranteed confidence... always inspect
 flagged drops visually before acting on a prediction" — never presented as a guarantee.
@@ -758,6 +760,8 @@ way to say "I don't recognise this" — demonstrated during testing (below).
 | Invalid (empty file) | Clean HTTP 400 |
 | Invalid (missing upload field) | Clean HTTP 422 (FastAPI's standard validation error) |
 | Out-of-distribution (random noise image) | **Confidently misclassified as Crystals, 56%** |
+
+</div>
 
 The out-of-distribution result is a genuine, useful finding, not a failure to hide: a standard
 classifier has no mechanism to recognise "this doesn't look like any training class," and this
