@@ -5,10 +5,18 @@
 
 **Report structure:** this report follows the project's actual workflow rather than a strict
 Q1→Q6 reading order. Every section is tagged with the brief question(s) it covers, and all six
-(Q1–Q6) are present: Dataset Description and EDA (Q1) → Classical Baseline (Q3) → ANN: Initial
-and Final Models (Q2, Q3) → Model Comparison (Q3) → Explainable AI (Q5) → GenAI Evaluation (Q6)
-→ Full Model Comparison incl. GenAI (Q3, Q6) → Unsuccessful Experiments (Q3, Q6) → Error
-Predictions and Analysis (Q3, Q5) → Web Application (Q4).
+(Q1–Q6) are present:
+
+1. Dataset Description and EDA (Q1)
+2. Classical Baseline (Q3)
+3. ANN: Initial and Final Models (Q2, Q3)
+4. Model Comparison (Q3)
+5. Explainable AI (Q5)
+6. GenAI Evaluation (Q6)
+7. Full Model Comparison, including GenAI (Q3, Q6)
+8. Unsuccessful Experiments (Q3, Q6)
+9. Error Predictions and Analysis (Q3, Q5)
+10. Web Application (Q4)
 
 ---
 
