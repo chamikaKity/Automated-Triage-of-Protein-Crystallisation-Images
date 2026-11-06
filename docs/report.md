@@ -1,7 +1,14 @@
+<div class="title-block">
+
 # MARCO Crystallisation Image Triage — Report
 
-*Github Link: https://github.com/chamikaKity/Automated-Triage-of-Protein-Crystallisation-Images.
-COMScDS252P-001. Chamika Subashinie.*
+*Github Link: https://github.com/chamikaKity/Automated-Triage-of-Protein-Crystallisation-Images*
+
+**COMScDS252P-001**
+
+**Chamika Subashinie**
+
+</div>
 
 **Summary:** this project builds and compares three approaches to flagging protein
 crystallisation drops likely to contain crystals from microscope images in the MARCO dataset: a
