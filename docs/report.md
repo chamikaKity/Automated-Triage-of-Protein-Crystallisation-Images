@@ -498,17 +498,19 @@ cases themselves and what each method found.
    region on the false-alarm case (see Error Predictions and Analysis, below) dropped the
    predicted Crystals probability from 0.624 to 0.136.
 
-   ![Sanity check 1: occluding the Grad-CAM region](figures/q5_sanity_occlusion.png)
+   <div style="text-align: center;">
+   <img src="figures/q5_sanity_occlusion.png" style="width:60%;" alt="Sanity check 1: occluding the Grad-CAM region">
+   <p style="font-size:0.85em;">Sanity check 1: occluding the Grad-CAM region</p>
+   </div>
 
 2. **Model randomisation** (Adebayo et al., 2018): re-initialising the trained layers
    (`layer4`+head) with random weights changed the Grad-CAM heatmap substantially — correlation
    -0.33 with the trained model's heatmap, confirming the explanation genuinely depends on what
    the model learned, not just its architecture.
 
-   <div style="page-break-inside: avoid;">
-
-   ![Sanity check 2: model randomisation](figures/q5_sanity_randomization.png)
-
+   <div style="page-break-inside: avoid; text-align: center;">
+   <img src="figures/q5_sanity_randomization.png" style="width:60%;" alt="Sanity check 2: model randomisation">
+   <p style="font-size:0.85em;">Sanity check 2: model randomisation</p>
    </div>
 
 **Limitations, stated explicitly throughout** (notebook and app): none of these methods prove
